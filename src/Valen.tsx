@@ -195,7 +195,6 @@ export default function Valen() {
             <h1>94%</h1>
 
           </div>
-
   
 
           <div className="card card-verde">
