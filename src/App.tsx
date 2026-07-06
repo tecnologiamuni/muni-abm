@@ -1,20 +1,24 @@
+import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
 import Dashboard from "./Dashboard"
-import Belen from "./Belen"
-import Valen from "./Valen"
-import CargarAgente from "./CargarAgente"
+
+const Belen = lazy(() => import("./Belen"))
+const Valen = lazy(() => import("./Valen"))
+const CargarAgente = lazy(() => import("./CargarAgente"))
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/valen" element={<Valen />} />
-        <Route path="/belen" element={<Belen />} />
-        <Route path="/cargar-agente" element={<CargarAgente />} />
-      </Routes>
+      <Suspense fallback={null}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/valen" element={<Valen />} />
+          <Route path="/belen" element={<Belen />} />
+          <Route path="/cargar-agente" element={<CargarAgente />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   )
 }

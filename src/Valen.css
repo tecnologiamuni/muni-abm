@@ -1,42 +1,35 @@
 
 
-*{
+.valen,
+.valen * {
     margin:0;
     padding:0;
     box-sizing:border-box;
 }
 
-body{
+.valen {
+    min-height:100vh;
     font-family:Inter,sans-serif;
-    background:#eef4ef;
+    background:linear-gradient(180deg, #eef7ef 0%, #edf5ef 100% );
     color:#1d1d1d;
 }
 
-button{
+.valen button{
     cursor:pointer;
     border:none;
     font-family:inherit;
 }
 
-input{
+.valen input{
     outline:none;
     border:none;
     font-family:inherit;
 }
 
-a{
+.valen a{
     text-decoration:none;
     color:inherit;
 }
-
-
-
-.valen{
-    min-height:100vh;
-    background:linear-gradient(180deg, #eef7ef 0%, #edf5ef 100% );
-}
-
-
 
 
 .navbar{
