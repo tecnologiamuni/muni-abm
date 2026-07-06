@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
 import Dashboard from "./Dashboard"
+import LoginPage from "./app/login/page"
 
 const Belen = lazy(() => import("./Belen"))
 const Valen = lazy(() => import("./Valen"))
@@ -12,6 +13,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={null}>
         <Routes>
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/valen" element={<Valen />} />
