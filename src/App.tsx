@@ -14,7 +14,7 @@ export default function App() {
       <Suspense fallback={null}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/valen" element={<Valen />} />
           <Route path="/belen" element={<Belen />} />

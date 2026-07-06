@@ -1,3 +1,6 @@
+import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,67 +11,157 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useAuthStore } from "@/store/auth"
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"form">) {
+const API_BASE = "https://presentismo-backend.vercel.app/api"
+
+type AuthMode = "login" | "register"
+
+export function LoginForm({ className }: { className?: string }) {
+  const [mode, setMode] = useState<AuthMode>("login")
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState("user")
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const setToken = useAuthStore((state) => state.setToken)
+  const navigate = useNavigate()
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setError(null)
+    setMessage(null)
+    setLoading(true)
+
+    const payload = mode === "login"
+      ? { username, password }
+      : { username, password, role }
+    const endpoint = mode === "login" ? "/auth/login" : "/auth/register"
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || response.statusText || "Error en la solicitud")
+      }
+
+      if (mode === "login") {
+        if (!data.token) {
+          throw new Error("No se recibió token de autenticación")
+        }
+
+        setToken(data.token)
+        navigate("/dashboard")
+        return
+      }
+
+      setMessage(data.message || "Registro exitoso. Inicia sesión ahora.")
+      setMode("login")
+      setPassword("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleMode = () => {
+    setMode(mode === "login" ? "register" : "login")
+    setError(null)
+    setMessage(null)
+  }
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit}>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
-          <h1 className="text-2xl font-bold">Login to your account</h1>
+          <h1 className="text-2xl font-bold">
+            {mode === "login" ? "Inicia sesión" : "Regístrate"}
+          </h1>
           <p className="text-sm text-balance text-muted-foreground">
-            Enter your email below to login to your account
+            {mode === "login"
+              ? "Usa tu usuario y contraseña para acceder." 
+              : "Crea una nueva cuenta para acceder al dashboard."}
           </p>
         </div>
+
+        {error ? (
+          <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        {message ? (
+          <div className="rounded-md border border-primary/50 bg-primary/10 px-4 py-3 text-sm text-primary-foreground">
+            {message}
+          </div>
+        ) : null}
+
         <Field>
-          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <FieldLabel htmlFor="username">Usuario</FieldLabel>
           <Input
-            id="email"
-            type="email"
-            placeholder="m@example.com"
+            id="username"
+            type="text"
+            placeholder="usuario123"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
             required
             className="bg-background"
           />
         </Field>
+
         <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <a
-              href="#"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Forgot your password?
-            </a>
-          </div>
+          <FieldLabel htmlFor="password">Contraseña</FieldLabel>
           <Input
             id="password"
             type="password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
             required
             className="bg-background"
           />
         </Field>
+
+        {mode === "register" ? (
+          <Field>
+            <FieldLabel htmlFor="role">Rol</FieldLabel>
+            <Input
+              id="role"
+              type="text"
+              placeholder="user"
+              value={role}
+              onChange={(event) => setRole(event.target.value)}
+              className="bg-background"
+            />
+            <FieldDescription>Opcional. Por ejemplo: user, admin.</FieldDescription>
+          </Field>
+        ) : null}
+
         <Field>
-          <Button type="submit">Login</Button>
-        </Field>
-        <FieldSeparator>Or continue with</FieldSeparator>
-        <Field>
-          <Button variant="outline" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path
-                d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"
-                fill="currentColor"
-              />
-            </svg>
-            Login with GitHub
+          <Button type="submit" disabled={loading}>
+            {loading ? "Enviando..." : mode === "login" ? "Iniciar sesión" : "Registrarme"}
           </Button>
-          <FieldDescription className="text-center">
-            Don&apos;t have an account?{" "}
-            <a href="#" className="underline underline-offset-4">
-              Sign up
-            </a>
-          </FieldDescription>
+        </Field>
+
+        <FieldSeparator>
+          {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
+        </FieldSeparator>
+
+        <Field>
+          <Button variant="outline" type="button" onClick={toggleMode}>
+            {mode === "login" ? "Regístrate" : "Inicia sesión"}
+          </Button>
         </Field>
       </FieldGroup>
     </form>
