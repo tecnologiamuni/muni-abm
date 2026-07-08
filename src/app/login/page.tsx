@@ -4,6 +4,7 @@ import { GalleryVerticalEnd } from "lucide-react"
 
 import { LoginForm } from "@/components/login-form"
 import { useAuthStore } from "@/store/auth"
+import ciudadImage from "./ciudad.jpg"
 
 export default function LoginPage() {
   const token = useAuthStore((state) => state.token)
@@ -23,7 +24,7 @@ export default function LoginPage() {
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <GalleryVerticalEnd className="size-4" />
             </div>
-            Acme Inc.
+            Municipalidad de Rivadavia
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
@@ -34,9 +35,9 @@ export default function LoginPage() {
       </div>
       <div className="relative hidden bg-muted lg:block">
         <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
+          src={ciudadImage}
+          alt="Ciudad"
+          className="absolute inset-0 h-full w-full object-cover"
         />
       </div>
     </div>
