@@ -33,7 +33,6 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { toast } from "sonner"
 import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -58,7 +57,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -203,29 +201,42 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
-          >
-            <EllipsisVerticalIcon />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32">
-          <DropdownMenuItem onSelect={() => toast.success(`Detalle de ${row.original.apellido}`)}>
-            Ver detalle
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => <ActionsCell item={row.original} />,
   },
 ]
+
+function ActionsCell({ item }: { item: z.infer<typeof schema> }) {
+  const [open, setOpen] = React.useState(false)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+          size="icon"
+        >
+          <EllipsisVerticalIcon />
+          <span className="sr-only">Abrir menú</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-32">
+        <DropdownMenuItem
+          onSelect={(event) => {
+            event.preventDefault()
+            setOpen(true)
+          }}
+        >
+          Ver detalle
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
+      </DropdownMenuContent>
+
+      <TableCellViewer item={item} open={open} onOpenChange={setOpen} />
+    </DropdownMenu>
+  )
+}
 
 function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
   const { transform, transition, setNodeRef, isDragging } = useSortable({
@@ -498,91 +509,232 @@ export function DataTable({
   )
 }
 
-function TableCellViewer({ item }: { item: z.infer<typeof schema> }) {
+function TableCellViewer({
+  item,
+  trigger,
+  open,
+  onOpenChange,
+}: {
+  item: z.infer<typeof schema>
+  trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
   const isMobile = useIsMobile()
+  function InfoRow({
+  label,
+  value,
+}: {
+  label: string
+  value: React.ReactNode
+}) {
+  return (
+    <div className="flex justify-between border-b pb-2">
+
+      <span className="text-muted-foreground">
+        {label}
+      </span>
+
+      <span className="font-medium">
+        {value}
+      </span>
+
+    </div>
+  )
+}
+function TimelineItem({
+  title,
+  date,
+}: {
+  title: string
+  date: string
+}) {
+  return (
+    <div className="flex gap-3">
+
+      <div className="mt-1 h-3 w-3 rounded-full bg-violet-600" />
+
+      <div>
+
+        <p className="font-medium">
+          {title}
+        </p>
+
+        <p className="text-sm text-muted-foreground">
+          {date}
+        </p>
+
+      </div>
+
+    </div>
+  )
+}
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
-      <DrawerTrigger asChild>
-        <Button variant="link" className="w-fit px-0 text-left text-foreground">
-          {item.apellido} {item.nombre}
-        </Button>
-      </DrawerTrigger>
-      <DrawerContent>
-        <DrawerHeader className="gap-1">
-          <DrawerTitle>{`${item.apellido} ${item.nombre}`}</DrawerTitle>
-          <DrawerDescription>Detalle del agente</DrawerDescription>
-        </DrawerHeader>
-        <div className="flex flex-col gap-4 overflow-y-auto px-4 text-sm">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="legajo">Legajo</Label>
-              <Input id="legajo" defaultValue={item.legajo} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="dni">DNI</Label>
-              <Input id="dni" defaultValue={item.dni} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="puesto">Puesto</Label>
-              <Input id="puesto" defaultValue={item.puesto} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="dependencia">Dependencia</Label>
-              <Input id="dependencia" defaultValue={item.dependencia_id} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="domicilio">Domicilio</Label>
-              <Input id="domicilio" defaultValue={item.domicilio} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="localidad">Localidad</Label>
-              <Input id="localidad" defaultValue={item.localidad} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="sexo">Sexo</Label>
-              <Input id="sexo" defaultValue={item.sexo} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="nro_celular">Celular</Label>
-              <Input id="nro_celular" defaultValue={item.nro_celular} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="fecha_nacimiento">Fecha de nacimiento</Label>
-              <Input id="fecha_nacimiento" defaultValue={item.fecha_nacimiento} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="fecha_ingreso">Fecha de ingreso</Label>
-              <Input id="fecha_ingreso" defaultValue={item.fecha_ingreso} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="nivel_estudios">Nivel de estudios</Label>
-              <Input id="nivel_estudios" defaultValue={item.nivel_estudios} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="cantidad_hijos">Cantidad de hijos</Label>
-              <Input id="cantidad_hijos" defaultValue={item.cantidad_hijos} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="fecha_baja">Fecha de baja</Label>
-              <Input id="fecha_baja" defaultValue={item.fecha_baja ?? "-"} readOnly />
-            </div>
-            <div className="flex flex-col gap-3">
-              <Label htmlFor="motivo_baja">Motivo de baja</Label>
-              <Input id="motivo_baja" defaultValue={item.motivo_baja ?? "-"} readOnly />
-            </div>
-            <div className="flex flex-col gap-3 sm:col-span-2">
-              <Label htmlFor="es_jerarquico">Jerárquico</Label>
-              <Input id="es_jerarquico" defaultValue={item.es_jerarquico ?? "-"} readOnly />
-            </div>
-          </div>
-        </div>
-        <DrawerFooter>
-          <Button>Guardar</Button>
-          <DrawerClose asChild>
-            <Button variant="outline">Cerrar</Button>
-          </DrawerClose>
-        </DrawerFooter>
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      open={open}
+      onOpenChange={onOpenChange}
+    >
+      {/* If the drawer is controlled via props (open/onOpenChange), don't render
+          the inline trigger (which caused the name to appear under the menu).
+          Render a trigger only in uncontrolled mode so the row cell still
+          shows the name as a button. */}
+      {onOpenChange ? null : (
+        <DrawerTrigger asChild>
+          {trigger ?? (
+            <Button variant="link" className="w-fit px-0 text-left text-foreground">
+              {item.apellido} {item.nombre}
+            </Button>
+          )}
+        </DrawerTrigger>
+      )}
+     <DrawerContent className="max-w-[500px] ml-auto">
+        
+        <DrawerHeader className="border-b pb-6">
+
+  <div className="flex items-center gap-4">
+
+    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
+      {item.nombre[0]}
+      {item.apellido[0]}
+    </div>
+
+    <div>
+
+      <DrawerTitle className="text-xl">
+        {item.apellido} {item.nombre}
+      </DrawerTitle>
+
+      <DrawerDescription>
+        {item.puesto}
+      </DrawerDescription>
+
+    </div>
+
+  </div>
+
+</DrawerHeader>
+
+<div className="overflow-y-auto px-6 py-6">
+
+  <div className="space-y-6">
+
+    <section>
+
+      <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">
+        Información personal
+      </h3>
+
+      <div className="space-y-4">
+
+        <InfoRow
+          label="Legajo"
+          value={item.legajo}
+        />
+
+        <InfoRow
+          label="DNI"
+          value={item.dni}
+        />
+
+        <InfoRow
+          label="Puesto"
+          value={item.puesto}
+        />
+
+        <InfoRow
+          label="Localidad"
+          value={item.localidad}
+        />
+
+        <InfoRow
+          label="Domicilio"
+          value={item.domicilio}
+        />
+
+        <InfoRow
+          label="Celular"
+          value={item.nro_celular}
+        />
+
+        <InfoRow
+          label="Nacimiento"
+          value={item.fecha_nacimiento}
+        />
+
+        <InfoRow
+          label="Ingreso"
+          value={item.fecha_ingreso}
+        />
+
+        <InfoRow
+          label="Nivel"
+          value={item.nivel_estudios}
+        />
+
+        <InfoRow
+          label="Hijos"
+          value={item.cantidad_hijos}
+        />
+
+      </div>
+
+    </section>
+
+    <section>
+
+      <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">
+        Estado
+      </h3>
+
+      <Badge className="bg-green-500">
+        Activo
+      </Badge>
+
+    </section>
+
+    <section>
+
+      <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">
+        Historial
+      </h3>
+
+      <div className="space-y-4">
+
+        <TimelineItem
+          title="Alta del agente"
+          date={item.fecha_ingreso}
+        />
+
+        <TimelineItem
+          title="Última actualización"
+          date="Hace 2 días"
+        />
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
+
+<DrawerFooter className="border-t">
+
+  <Button>
+    Editar agente
+  </Button>
+
+  <DrawerClose asChild>
+
+    <Button variant="outline">
+      Cerrar
+    </Button>
+
+  </DrawerClose>
+
+</DrawerFooter>
       </DrawerContent>
     </Drawer>
   )
