@@ -1,13 +1,51 @@
+import { useEffect, useState } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { DataTable } from "@/components/data-table"
 import { SectionCards } from "@/components/section-cards"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-
-import data from "./data.json"
+import { useNavigate } from "react-router-dom"
 
 export default function Dashboard() {
+  const API_BASE = "https://presentismo-backend.vercel.app/api"
+
+  const navigate = useNavigate()
+  const [agentes, setAgentes] = useState([])
+
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        navigate("/login")
+      }
+    } catch (error) {
+      console.error("Error al verificar el token:", error)
+      navigate("/login")
+    }
+
+    // fetch agentes from the API with token in authorization header
+    const fetchAgentes = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/agentes`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("auth_token")}`
+          }
+        })
+        if (!response.ok) {
+          throw new Error("Error al obtener los agentes")
+        }
+        const agentes = await response.json()
+        setAgentes(agentes)
+      } catch (error) {
+        console.error("Error al obtener los agentes:", error)
+      }
+
+    }
+
+    fetchAgentes()
+  }, [navigate])
+
   return (
     <SidebarProvider
       style={
@@ -27,7 +65,7 @@ export default function Dashboard() {
               <div className="px-4 lg:px-6">
                 <ChartAreaInteractive />
               </div>
-              <DataTable data={data} />
+              <DataTable data={agentes} />
             </div>
           </div>
         </div>
