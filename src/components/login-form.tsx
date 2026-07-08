@@ -8,7 +8,7 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
+  // FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
@@ -75,11 +75,11 @@ export function LoginForm({ className }: { className?: string }) {
     }
   }
 
-  const toggleMode = () => {
-    setMode(mode === "login" ? "register" : "login")
-    setError(null)
-    setMessage(null)
-  }
+  // const toggleMode = () => {
+  //   setMode(mode === "login" ? "register" : "login")
+  //   setError(null)
+  //   setMessage(null)
+  // }
 
   return (
     <form className={cn("flex flex-col gap-6", className)} onSubmit={handleSubmit}>
@@ -154,7 +154,7 @@ export function LoginForm({ className }: { className?: string }) {
           </Button>
         </Field>
 
-        <FieldSeparator>
+        {/* <FieldSeparator>
           {mode === "login" ? "¿No tienes cuenta?" : "¿Ya tienes cuenta?"}
         </FieldSeparator>
 
@@ -162,7 +162,7 @@ export function LoginForm({ className }: { className?: string }) {
           <Button variant="outline" type="button" onClick={toggleMode}>
             {mode === "login" ? "Regístrate" : "Inicia sesión"}
           </Button>
-        </Field>
+        </Field> */}
       </FieldGroup>
     </form>
   )
