@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
+import AgentForm from "@/AgentForm"
 import {
   Select,
   SelectContent,
@@ -77,6 +78,7 @@ import {
   GripVerticalIcon,
   EllipsisVerticalIcon,
   Columns3Icon,
+  PlusIcon,
   ChevronDownIcon,
   ChevronsLeftIcon,
   ChevronLeftIcon,
@@ -279,6 +281,7 @@ export function DataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
+  const [addOpen, setAddOpen] = React.useState(false)
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -368,6 +371,41 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
+          <Drawer open={addOpen} onOpenChange={setAddOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="outline" size="sm" className="ml-2">
+                <PlusIcon data-icon="inline-start" />
+                Agregar agente
+              </Button>
+            </DrawerTrigger>
+
+            <DrawerContent className="inset-0 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-[680px] rounded-[2rem] border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/40 ring-1 ring-white/5">
+                <div className="p-6 md:p-8">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <div className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-300 shadow-md shadow-emerald-500/10">
+                      <PlusIcon className="h-7 w-7" />
+                    </div>
+                    <div>
+                      <DrawerTitle className="text-2xl text-white">Agregar agente</DrawerTitle>
+                      <DrawerDescription className="text-sm text-slate-400">
+                        Complete los datos y presione Cargar Agente.
+                      </DrawerDescription>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <AgentForm
+                      onAdd={(agente) => {
+                        setData((prev) => [...prev, agente])
+                      }}
+                      onClose={() => setAddOpen(false)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </DrawerContent>
+          </Drawer>
           {/* <Button variant="outline" size="sm">
             <PlusIcon
             />
