@@ -58,6 +58,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import AgentForm from "@/AgentForm"
 import {
   Select,
@@ -85,6 +86,8 @@ import {
   ChevronRightIcon,
   ChevronsRightIcon,
 } from "lucide-react"
+
+const API_BASE = "https://presentismo-backend.vercel.app/api"
 
 export const schema = z.object({
   id: z.number(),
@@ -127,89 +130,15 @@ function DragHandle({ id }: { id: number }) {
   )
 }
 
-const columns: ColumnDef<z.infer<typeof schema>>[] = [
-  {
-    id: "drag",
-    header: () => null,
-    cell: ({ row }) => <DragHandle id={row.original.id} />,
-  },
-  {
-    id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={row.getIsSelected()}
-          onCheckedChange={(value) => row.toggleSelected(!!value)}
-          aria-label="Select row"
-        />
-      </div>
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "apellido",
-    header: "Agente",
-    cell: ({ row }) => <TableCellViewer item={row.original} />,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "legajo",
-    header: "Legajo",
-    cell: ({ row }) => <div className="font-medium">{row.original.legajo}</div>,
-  },
-  {
-    accessorKey: "dni",
-    header: "DNI",
-    cell: ({ row }) => <div>{row.original.dni}</div>,
-  },
-  {
-    accessorKey: "puesto",
-    header: "Puesto",
-    cell: ({ row }) => (
-      <div className="max-w-[260px] truncate text-sm">{row.original.puesto}</div>
-    ),
-  },
-  {
-    accessorKey: "localidad",
-    header: "Localidad",
-    cell: ({ row }) => <div>{row.original.localidad}</div>,
-  },
-  {
-    accessorKey: "fecha_ingreso",
-    header: "Ingreso",
-    cell: ({ row }) => <div>{row.original.fecha_ingreso}</div>,
-  },
-  {
-    accessorKey: "sexo",
-    header: "Sexo",
-    cell: ({ row }) => (
-      <Badge variant="outline" className="px-1.5 text-muted-foreground">
-        {row.original.sexo}
-      </Badge>
-    ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => <ActionsCell item={row.original} />,
-  },
-]
-
-function ActionsCell({ item }: { item: z.infer<typeof schema> }) {
-  const [open, setOpen] = React.useState(false)
-
+function ActionsCell({
+  item,
+  open,
+  onOpenChange,
+}: {
+  item: z.infer<typeof schema>
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -226,7 +155,7 @@ function ActionsCell({ item }: { item: z.infer<typeof schema> }) {
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault()
-            setOpen(true)
+            onOpenChange(true)
           }}
         >
           Ver detalle
@@ -235,7 +164,7 @@ function ActionsCell({ item }: { item: z.infer<typeof schema> }) {
         <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
       </DropdownMenuContent>
 
-      <TableCellViewer item={item} open={open} onOpenChange={setOpen} />
+      <TableCellViewer item={item} open={open} onOpenChange={onOpenChange} />
     </DropdownMenu>
   )
 }
@@ -271,6 +200,7 @@ export function DataTable({
   data: z.infer<typeof schema>[]
 }) {
   const [data, setData] = React.useState(() => initialData)
+  const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
 
   React.useEffect(() => {
     setData(initialData)
@@ -288,6 +218,110 @@ export function DataTable({
     pageSize: 10,
   })
   const sortableId = React.useId()
+
+  const columns = React.useMemo<ColumnDef<z.infer<typeof schema>>[]>(
+    () => [
+      {
+        id: "drag",
+        header: () => null,
+        cell: ({ row }) => <DragHandle id={row.original.id} />,
+      },
+      {
+        id: "select",
+        header: ({ table }) => (
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && "indeterminate")
+              }
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(!!value)
+              }
+              aria-label="Select all"
+            />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="flex items-center justify-center">
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(value) => row.toggleSelected(!!value)}
+              aria-label="Select row"
+            />
+          </div>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+      {
+        accessorKey: "apellido",
+        header: "Agente",
+        cell: ({ row }) => (
+          <TableCellViewer
+            item={row.original}
+            onSave={(updatedItem) => {
+              setData((prev) =>
+                prev.map((current) =>
+                  current.id === updatedItem.id ? updatedItem : current
+                )
+              )
+            }}
+          />
+        ),
+        enableHiding: false,
+      },
+      {
+        accessorKey: "legajo",
+        header: "Legajo",
+        cell: ({ row }) => <div className="font-medium">{row.original.legajo}</div>,
+      },
+      {
+        accessorKey: "dni",
+        header: "DNI",
+        cell: ({ row }) => <div>{row.original.dni}</div>,
+      },
+      {
+        accessorKey: "puesto",
+        header: "Puesto",
+        cell: ({ row }) => (
+          <div className="max-w-[260px] truncate text-sm">{row.original.puesto}</div>
+        ),
+      },
+      {
+        accessorKey: "localidad",
+        header: "Localidad",
+        cell: ({ row }) => <div>{row.original.localidad}</div>,
+      },
+      {
+        accessorKey: "fecha_ingreso",
+        header: "Ingreso",
+        cell: ({ row }) => <div>{row.original.fecha_ingreso}</div>,
+      },
+      {
+        accessorKey: "sexo",
+        header: "Sexo",
+        cell: ({ row }) => (
+          <Badge variant="outline" className="px-1.5 text-muted-foreground">
+            {row.original.sexo}
+          </Badge>
+        ),
+      },
+      {
+        id: "actions",
+        cell: ({ row }) => (
+          <ActionsCell
+            item={row.original}
+            open={activeDrawerId === row.original.id}
+            onOpenChange={(nextOpen) => {
+              setActiveDrawerId(nextOpen ? row.original.id : null)
+            }}
+          />
+        ),
+      },
+    ],
+    [activeDrawerId]
+  )
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
     useSensor(TouchSensor, {}),
@@ -552,34 +586,98 @@ function TableCellViewer({
   trigger,
   open,
   onOpenChange,
+  onSave,
 }: {
   item: z.infer<typeof schema>
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  onSave?: (updatedItem: z.infer<typeof schema>) => void
 }) {
   const isMobile = useIsMobile()
+  const [isEditing, setIsEditing] = React.useState(false)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
+  const [currentItem, setCurrentItem] = React.useState(item)
+  const firstInputRef = React.useRef<HTMLInputElement | null>(null)
+  const [formData, setFormData] = React.useState({
+    nombre: item.nombre,
+    apellido: item.apellido,
+    puesto: item.puesto,
+    legajo: String(item.legajo),
+    dni: String(item.dni),
+    localidad: item.localidad,
+    domicilio: item.domicilio,
+    nro_celular: item.nro_celular,
+    fecha_nacimiento: item.fecha_nacimiento,
+    fecha_ingreso: item.fecha_ingreso,
+    nivel_estudios: item.nivel_estudios,
+    cantidad_hijos: String(item.cantidad_hijos),
+  })
+
+  const syncFromItem = React.useCallback((source: z.infer<typeof schema>) => {
+    setCurrentItem(source)
+    setFormData({
+      nombre: source.nombre,
+      apellido: source.apellido,
+      puesto: source.puesto,
+      legajo: String(source.legajo),
+      dni: String(source.dni),
+      localidad: source.localidad,
+      domicilio: source.domicilio,
+      nro_celular: source.nro_celular,
+      fecha_nacimiento: source.fecha_nacimiento,
+      fecha_ingreso: source.fecha_ingreso,
+      nivel_estudios: source.nivel_estudios,
+      cantidad_hijos: String(source.cantidad_hijos),
+    })
+  }, [])
+
+  React.useEffect(() => {
+    syncFromItem(item)
+    setIsEditing(false)
+    setErrorMessage(null)
+  }, [item, syncFromItem])
+
+  React.useEffect(() => {
+    if (isEditing) {
+      requestAnimationFrame(() => {
+        firstInputRef.current?.focus()
+      })
+    }
+  }, [isEditing])
+
   function InfoRow({
-  label,
-  value,
-}: {
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <div className="flex justify-between border-b pb-2">
+    label,
+    value,
+    field,
+  }: {
+    label: string
+    value: React.ReactNode
+    field?: keyof typeof formData
+  }) {
+    return (
+      <div className="flex items-center justify-between gap-3 border-b pb-2">
+        <span className="text-muted-foreground">{label}</span>
+        {isEditing && field ? (
+          <Input
+            ref={field === "nombre" ? firstInputRef : undefined}
+            value={String(formData[field] ?? "")}
+            onChange={(event) =>
+              setFormData((current) => ({
+                ...current,
+                [field]: event.target.value,
+              }))
+            }
+            className="h-8 max-w-44"
+          />
+        ) : (
+          <span className="font-medium">{value}</span>
+        )}
+      </div>
+    )
+  }
 
-      <span className="text-muted-foreground">
-        {label}
-      </span>
-
-      <span className="font-medium">
-        {value}
-      </span>
-
-    </div>
-  )
-}
 function TimelineItem({
   title,
   date,
@@ -607,6 +705,62 @@ function TimelineItem({
     </div>
   )
 }
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    setErrorMessage(null)
+
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        throw new Error("No hay sesión activa")
+      }
+
+      const payload = {
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        legajo: Number(formData.legajo),
+        dni: Number(formData.dni),
+        puesto: formData.puesto,
+        localidad: formData.localidad,
+        domicilio: formData.domicilio,
+        nro_celular: formData.nro_celular,
+        fecha_nacimiento: formData.fecha_nacimiento,
+        fecha_ingreso: formData.fecha_ingreso,
+        nivel_estudios: formData.nivel_estudios,
+        cantidad_hijos: Number(formData.cantidad_hijos) || 0,
+      }
+
+      const response = await fetch(`${API_BASE}/agentes/${item.legajo}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || errorData?.message || "No se pudo guardar el agente")
+      }
+
+      const updatedAgent = {
+        ...currentItem,
+        ...payload,
+      }
+
+      setCurrentItem(updatedAgent)
+      onSave?.(updatedAgent)
+      setIsEditing(false)
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "No se pudo guardar el agente"
+      )
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   return (
     <Drawer
@@ -641,11 +795,11 @@ function TimelineItem({
     <div>
 
       <DrawerTitle className="text-xl">
-        {item.apellido} {item.nombre}
+        {isEditing ? `${formData.apellido} ${formData.nombre}` : `${currentItem.apellido} ${currentItem.nombre}`}
       </DrawerTitle>
 
       <DrawerDescription>
-        {item.puesto}
+        {isEditing ? formData.puesto : currentItem.puesto}
       </DrawerDescription>
 
     </div>
@@ -664,56 +818,84 @@ function TimelineItem({
         Información personal
       </h3>
 
+      {errorMessage ? (
+        <div className="mb-4 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {errorMessage}
+        </div>
+      ) : null}
+
       <div className="space-y-4">
 
         <InfoRow
+          label="Nombre"
+          value={currentItem.nombre}
+          field="nombre"
+        />
+
+        <InfoRow
+          label="Apellido"
+          value={currentItem.apellido}
+          field="apellido"
+        />
+
+        <InfoRow
           label="Legajo"
-          value={item.legajo}
+          value={currentItem.legajo}
+          field="legajo"
         />
 
         <InfoRow
           label="DNI"
-          value={item.dni}
+          value={currentItem.dni}
+          field="dni"
         />
 
         <InfoRow
           label="Puesto"
-          value={item.puesto}
+          value={currentItem.puesto}
+          field="puesto"
         />
 
         <InfoRow
           label="Localidad"
-          value={item.localidad}
+          value={currentItem.localidad}
+          field="localidad"
         />
 
         <InfoRow
           label="Domicilio"
-          value={item.domicilio}
+          value={currentItem.domicilio}
+          field="domicilio"
         />
 
         <InfoRow
           label="Celular"
-          value={item.nro_celular}
+          value={currentItem.nro_celular}
+          field="nro_celular"
         />
 
         <InfoRow
           label="Nacimiento"
-          value={item.fecha_nacimiento}
+          value={currentItem.fecha_nacimiento}
+          field="fecha_nacimiento"
         />
 
         <InfoRow
           label="Ingreso"
-          value={item.fecha_ingreso}
+          value={currentItem.fecha_ingreso}
+          field="fecha_ingreso"
         />
 
         <InfoRow
           label="Nivel"
-          value={item.nivel_estudios}
+          value={currentItem.nivel_estudios}
+          field="nivel_estudios"
         />
 
         <InfoRow
           label="Hijos"
-          value={item.cantidad_hijos}
+          value={currentItem.cantidad_hijos}
+          field="cantidad_hijos"
         />
 
       </div>
@@ -759,19 +941,48 @@ function TimelineItem({
 </div>
 
 <DrawerFooter className="border-t">
-
-  <Button>
-    Editar agente
-  </Button>
-
-  <DrawerClose asChild>
-
-    <Button variant="outline">
-      Cerrar
-    </Button>
-
-  </DrawerClose>
-
+  {isEditing ? (
+    <>
+      <Button onClick={handleSave} disabled={isSaving}>
+        {isSaving ? "Guardando..." : "Guardar"}
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => {
+          setFormData({
+            nombre: item.nombre,
+            apellido: item.apellido,
+            puesto: item.puesto,
+            legajo: String(item.legajo),
+            dni: String(item.dni),
+            localidad: item.localidad,
+            domicilio: item.domicilio,
+            nro_celular: item.nro_celular,
+            fecha_nacimiento: item.fecha_nacimiento,
+            fecha_ingreso: item.fecha_ingreso,
+            nivel_estudios: item.nivel_estudios,
+            cantidad_hijos: String(item.cantidad_hijos),
+          })
+          setErrorMessage(null)
+          setIsEditing(false)
+        }}
+        disabled={isSaving}
+      >
+        Cancelar
+      </Button>
+    </>
+  ) : (
+    <>
+      <Button onClick={() => setIsEditing(true)}>
+        Editar agente
+      </Button>
+      <DrawerClose asChild>
+        <Button variant="outline">
+          Cerrar
+        </Button>
+      </DrawerClose>
+    </>
+  )}
 </DrawerFooter>
       </DrawerContent>
     </Drawer>
