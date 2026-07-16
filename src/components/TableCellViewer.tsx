@@ -3,7 +3,13 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useForm, useWatch, type UseFormRegister } from "react-hook-form"
+import {
+  Controller,
+  useForm,
+  useWatch,
+  type Control,
+  type UseFormRegister,
+} from "react-hook-form"
 import {
   Drawer,
   DrawerClose,
@@ -14,9 +20,75 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
-import type { Agent } from "@/types/agent"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import type { Agent, Dependencia } from "@/types/agent"
 
 const API_BASE = "https://presentismo-backend.vercel.app/api"
+
+const EMPTY_AGENT: Agent = {
+  id: 0,
+  legajo: 0,
+  dni: 0,
+  apellido: "",
+  nombre: "",
+  puesto: "",
+  dependencia_id: 0,
+  domicilio: "",
+  localidad: "",
+  sexo: "",
+  fecha_nacimiento: "",
+  fecha_ingreso: "",
+  nro_celular: "",
+  nivel_estudios: "",
+  cantidad_hijos: 0,
+  fecha_baja: null,
+  motivo_baja: null,
+  es_jerarquico: "NO",
+}
+
+const SEXO_OPTIONS = [
+  { value: "M", label: "M" },
+  { value: "F", label: "F" },
+]
+
+const LOCALIDAD_OPTIONS = [
+  "AMERICA",
+  "GONZALEZ MORENO",
+  "FORTIN OLAVARRIA",
+  "SANSINENA",
+  "ROOSEVELT",
+  "SUNDBLAD",
+  "MIRA PAMPA",
+  "SAN MAURICIO",
+  "BADANO",
+  "CERRITO",
+  "CONDARCO",
+  "VALENTIN GOMEZ",
+  "VILLA SENA",
+  "COLONIA EL BALDE",
+  "OTRO",
+].map((value) => ({ value, label: value }))
+
+const NIVEL_ESTUDIOS_OPTIONS = [
+  "PRIMARIO INCOMPLETO",
+  "PRIMARIO EN CURSO",
+  "PRIMARIO COMPLETO",
+  "SECUNDARIO INCOMPLETO",
+  "SECUNDARIO EN CURSO",
+  "SECUNDARIO COMPLETO",
+  "TERCIARIO INCOMPLETO",
+  "TERCIARIO EN CURSO",
+  "TERCIARIO COMPLETO",
+  "UNIVERSITARIO INCOMPLETO",
+  "UNIVERSITARIO EN CURSO",
+  "UNIVERSITARIO COMPLETO",
+].map((value) => ({ value, label: value }))
 
 type FormValues = {
   nombre: string
@@ -31,6 +103,9 @@ type FormValues = {
   fecha_ingreso: string
   nivel_estudios: string
   cantidad_hijos: string
+  sexo: string
+  dependencia_id: string
+  es_jerarquico: string
 }
 
 function InfoRow({
@@ -40,6 +115,7 @@ function InfoRow({
   isEditing,
   valueStr,
   registerFn,
+  placeholder,
 }: {
   label: string
   value: React.ReactNode
@@ -47,6 +123,7 @@ function InfoRow({
   isEditing: boolean
   valueStr?: string
   registerFn?: UseFormRegister<FormValues>
+  placeholder?: string
 }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b pb-2">
@@ -56,10 +133,57 @@ function InfoRow({
           key={`${field}-${String(value ?? "")}`}
           {...(registerFn ? registerFn(field) : {})}
           defaultValue={String(valueStr ?? value ?? "")}
+          placeholder={placeholder}
           className="h-8 max-w-44"
         />
       ) : (
         <span className="font-medium">{value}</span>
+      )}
+    </div>
+  )
+}
+
+function SelectRow({
+  label,
+  isEditing,
+  displayValue,
+  control,
+  name,
+  options,
+  placeholder,
+}: {
+  label: string
+  isEditing: boolean
+  displayValue: React.ReactNode
+  control: Control<FormValues>
+  name: keyof FormValues
+  options: { value: string; label: string }[]
+  placeholder?: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b pb-2">
+      <span className="text-muted-foreground">{label}</span>
+      {isEditing ? (
+        <Controller
+          control={control}
+          name={name}
+          render={({ field }) => (
+            <Select value={field.value || ""} onValueChange={field.onChange}>
+              <SelectTrigger size="sm" className="max-w-44">
+                <SelectValue placeholder={placeholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
+      ) : (
+        <span className="font-medium">{displayValue}</span>
       )}
     </div>
   )
@@ -95,36 +219,61 @@ export default function TableCellViewer({
   open,
   onOpenChange,
   onSave,
+  onCreate,
+  mode = "view",
+  dependencias = [],
 }: {
-  item: Agent
+  item?: Agent
   trigger?: React.ReactNode
   open?: boolean
   onOpenChange?: (open: boolean) => void
   onSave?: (updatedItem: Agent) => void
+  onCreate?: (newItem: Agent) => void
+  mode?: "view" | "create"
+  dependencias?: Dependencia[]
 }) {
+  const isCreate = mode === "create"
+  const resolvedItem = item ?? EMPTY_AGENT
   const isMobile = useIsMobile()
-  const [isEditing, setIsEditing] = React.useState(false)
+  const [isEditing, setIsEditing] = React.useState(isCreate)
   const [isSaving, setIsSaving] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
-  const [currentItem, setCurrentItem] = React.useState(item)
+  const [currentItem, setCurrentItem] = React.useState(resolvedItem)
+  const [internalOpen, setInternalOpen] = React.useState(false)
+
+  const isControlled = open !== undefined
+  const drawerOpen = isControlled ? open : internalOpen
+  const setDrawerOpen = React.useCallback(
+    (next: boolean) => {
+      if (isControlled) {
+        onOpenChange?.(next)
+      } else {
+        setInternalOpen(next)
+      }
+    },
+    [isControlled, onOpenChange]
+  )
 
   const buildFormValues = React.useCallback((source: Agent): FormValues => ({
     nombre: source.nombre,
     apellido: source.apellido,
     puesto: source.puesto,
-    legajo: String(source.legajo),
-    dni: String(source.dni),
+    legajo: source.legajo ? String(source.legajo) : "",
+    dni: source.dni ? String(source.dni) : "",
     localidad: source.localidad,
     domicilio: source.domicilio,
     nro_celular: source.nro_celular,
     fecha_nacimiento: source.fecha_nacimiento,
     fecha_ingreso: source.fecha_ingreso,
     nivel_estudios: source.nivel_estudios,
-    cantidad_hijos: String(source.cantidad_hijos),
+    cantidad_hijos: String(source.cantidad_hijos ?? ""),
+    sexo: source.sexo,
+    dependencia_id: source.dependencia_id ? String(source.dependencia_id) : "",
+    es_jerarquico: source.es_jerarquico ?? "NO",
   }), [])
 
   const { register, handleSubmit, reset, control, setFocus } = useForm<FormValues>({
-    defaultValues: buildFormValues(item),
+    defaultValues: buildFormValues(resolvedItem),
   })
 
   const watched = useWatch<FormValues>({ control })
@@ -139,6 +288,16 @@ export default function TableCellViewer({
       setFocus("nombre")
     }
   }, [isEditing, currentItem, reset, buildFormValues, setFocus])
+
+  // When opening the create drawer, start fresh in editing mode.
+  React.useEffect(() => {
+    if (isCreate && drawerOpen) {
+      setCurrentItem(EMPTY_AGENT)
+      setErrorMessage(null)
+      setIsEditing(true)
+      reset(buildFormValues(EMPTY_AGENT))
+    }
+  }, [isCreate, drawerOpen, reset, buildFormValues])
 
   const onSubmit = handleSubmit(async (values) => {
     setIsSaving(true)
@@ -160,49 +319,91 @@ export default function TableCellViewer({
         fecha_ingreso: values.fecha_ingreso,
         nivel_estudios: values.nivel_estudios,
         cantidad_hijos: Number(values.cantidad_hijos) || 0,
+        sexo: values.sexo,
+        dependencia_id: Number(values.dependencia_id) || 0,
+        es_jerarquico: values.es_jerarquico || "NO",
       }
 
-      const response = await fetch(`${API_BASE}/agentes/${item.legajo}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      })
+      const response = await fetch(
+        isCreate ? `${API_BASE}/agentes` : `${API_BASE}/agentes/${resolvedItem.legajo}`,
+        {
+          method: isCreate ? "POST" : "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      )
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null)
-        throw new Error(errorData?.error || errorData?.message || "No se pudo guardar el agente")
+        throw new Error(
+          errorData?.error ||
+            errorData?.message ||
+            (isCreate ? "No se pudo crear el agente" : "No se pudo guardar el agente")
+        )
       }
 
-      const updatedAgent = {
-        ...item,
-        ...payload,
+      if (isCreate) {
+        const created = await response.json().catch(() => null)
+        const newAgent: Agent = { ...EMPTY_AGENT, ...payload, ...(created ?? {}) }
+        onCreate?.(newAgent)
+        reset(buildFormValues(EMPTY_AGENT))
+        setDrawerOpen(false)
+      } else {
+        const updatedAgent = { ...resolvedItem, ...payload }
+        setCurrentItem(updatedAgent)
+        onSave?.(updatedAgent)
+        reset(buildFormValues(updatedAgent))
+        setIsEditing(false)
       }
-
-      setCurrentItem(updatedAgent)
-      onSave?.(updatedAgent)
-      reset(buildFormValues(updatedAgent))
-      setIsEditing(false)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el agente")
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : isCreate
+            ? "No se pudo crear el agente"
+            : "No se pudo guardar el agente"
+      )
     } finally {
       setIsSaving(false)
     }
   })
 
+  const handleCancel = () => {
+    setErrorMessage(null)
+    if (isCreate) {
+      reset(buildFormValues(EMPTY_AGENT))
+      setDrawerOpen(false)
+    } else {
+      reset(buildFormValues(resolvedItem))
+      setIsEditing(false)
+    }
+  }
+
+  const displayNombre = isEditing ? watched?.nombre ?? currentItem.nombre : currentItem.nombre
+  const displayApellido = isEditing ? watched?.apellido ?? currentItem.apellido : currentItem.apellido
+
+  const dependenciaOptions = React.useMemo(
+    () => dependencias.map((dep) => ({ value: String(dep.id), label: dep.nombre })),
+    [dependencias]
+  )
+  const dependenciaNombre =
+    dependencias.find((dep) => dep.id === currentItem.dependencia_id)?.nombre ??
+    (currentItem.dependencia_id ? String(currentItem.dependencia_id) : "—")
+
   return (
     <Drawer
       direction={isMobile ? "bottom" : "right"}
-      open={open}
-      onOpenChange={onOpenChange}
+      open={drawerOpen}
+      onOpenChange={setDrawerOpen}
     >
-      {onOpenChange ? null : (
+      {isControlled ? null : (
         <DrawerTrigger asChild>
           {trigger ?? (
             <Button variant="link" className="w-fit px-0 text-left text-foreground">
-              {item.apellido} {item.nombre}
+              {resolvedItem.apellido} {resolvedItem.nombre}
             </Button>
           )}
         </DrawerTrigger>
@@ -211,15 +412,21 @@ export default function TableCellViewer({
         <DrawerHeader className="border-b pb-6">
               <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
-              {currentItem.nombre[0]}
-              {currentItem.apellido[0]}
+              {(displayNombre?.[0] ?? "") || (isCreate ? "+" : "")}
+              {displayApellido?.[0] ?? ""}
             </div>
             <div>
               <DrawerTitle className="text-xl">
-                {isEditing ? `${watched?.apellido ?? currentItem.apellido} ${watched?.nombre ?? currentItem.nombre}` : `${currentItem.apellido} ${currentItem.nombre}`}
+                {isCreate
+                  ? "Nuevo agente"
+                  : `${displayApellido} ${displayNombre}`}
               </DrawerTitle>
               <DrawerDescription>
-                {isEditing ? watched?.puesto ?? currentItem.puesto : currentItem.puesto}
+                {isCreate
+                  ? "Complete los datos del nuevo agente"
+                  : isEditing
+                    ? watched?.puesto ?? currentItem.puesto
+                    : currentItem.puesto}
               </DrawerDescription>
             </div>
           </div>
@@ -242,28 +449,78 @@ export default function TableCellViewer({
                 <InfoRow label="Legajo" value={currentItem.legajo} field="legajo" isEditing={isEditing} valueStr={watched?.legajo} registerFn={register} />
                 <InfoRow label="DNI" value={currentItem.dni} field="dni" isEditing={isEditing} valueStr={watched?.dni} registerFn={register} />
                 <InfoRow label="Puesto" value={currentItem.puesto} field="puesto" isEditing={isEditing} valueStr={watched?.puesto} registerFn={register} />
-                <InfoRow label="Localidad" value={currentItem.localidad} field="localidad" isEditing={isEditing} valueStr={watched?.localidad} registerFn={register} />
+                <SelectRow
+                  label="Sexo"
+                  isEditing={isEditing}
+                  displayValue={currentItem.sexo}
+                  control={control}
+                  name="sexo"
+                  options={SEXO_OPTIONS}
+                  placeholder="Seleccionar"
+                />
+                <SelectRow
+                  label="Localidad"
+                  isEditing={isEditing}
+                  displayValue={currentItem.localidad}
+                  control={control}
+                  name="localidad"
+                  options={LOCALIDAD_OPTIONS}
+                  placeholder="Seleccionar"
+                />
                 <InfoRow label="Domicilio" value={currentItem.domicilio} field="domicilio" isEditing={isEditing} valueStr={watched?.domicilio} registerFn={register} />
                 <InfoRow label="Celular" value={currentItem.nro_celular} field="nro_celular" isEditing={isEditing} valueStr={watched?.nro_celular} registerFn={register} />
-                <InfoRow label="Nacimiento" value={currentItem.fecha_nacimiento} field="fecha_nacimiento" isEditing={isEditing} valueStr={watched?.fecha_nacimiento} registerFn={register} />
-                <InfoRow label="Ingreso" value={currentItem.fecha_ingreso} field="fecha_ingreso" isEditing={isEditing} valueStr={watched?.fecha_ingreso} registerFn={register} />
-                <InfoRow label="Nivel" value={currentItem.nivel_estudios} field="nivel_estudios" isEditing={isEditing} valueStr={watched?.nivel_estudios} registerFn={register} />
+                <InfoRow label="Nacimiento" value={currentItem.fecha_nacimiento} field="fecha_nacimiento" isEditing={isEditing} valueStr={watched?.fecha_nacimiento} registerFn={register} placeholder="AAAA-MM-DD" />
+                <InfoRow label="Ingreso" value={currentItem.fecha_ingreso} field="fecha_ingreso" isEditing={isEditing} valueStr={watched?.fecha_ingreso} registerFn={register} placeholder="AAAA-MM-DD" />
+                <SelectRow
+                  label="Nivel"
+                  isEditing={isEditing}
+                  displayValue={currentItem.nivel_estudios}
+                  control={control}
+                  name="nivel_estudios"
+                  options={NIVEL_ESTUDIOS_OPTIONS}
+                  placeholder="Seleccionar"
+                />
                 <InfoRow label="Hijos" value={currentItem.cantidad_hijos} field="cantidad_hijos" isEditing={isEditing} valueStr={watched?.cantidad_hijos} registerFn={register} />
+                <SelectRow
+                  label="Dependencia"
+                  isEditing={isEditing}
+                  displayValue={dependenciaNombre}
+                  control={control}
+                  name="dependencia_id"
+                  options={dependenciaOptions}
+                  placeholder="Seleccionar"
+                />
+                <SelectRow
+                  label="Jerárquico"
+                  isEditing={isEditing}
+                  displayValue={currentItem.es_jerarquico}
+                  control={control}
+                  name="es_jerarquico"
+                  options={[
+                    { value: "SI", label: "SI" },
+                    { value: "NO", label: "NO" },
+                  ]}
+                  placeholder="Seleccionar"
+                />
               </div>
             </section>
 
-            <section>
-              <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Estado</h3>
-              <Badge className="bg-green-500">Activo</Badge>
-            </section>
+            {isCreate ? null : (
+              <>
+                <section>
+                  <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Estado</h3>
+                  <Badge className="bg-green-500">Activo</Badge>
+                </section>
 
-            <section>
-              <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Historial</h3>
-              <div className="space-y-4">
-                <TimelineItem title="Alta del agente" date={item.fecha_ingreso} />
-                <TimelineItem title="Última actualización" date="Hace 2 días" />
-              </div>
-            </section>
+                <section>
+                  <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Historial</h3>
+                  <div className="space-y-4">
+                    <TimelineItem title="Alta del agente" date={resolvedItem.fecha_ingreso} />
+                    <TimelineItem title="Última actualización" date="Hace 2 días" />
+                  </div>
+                </section>
+              </>
+            )}
 
           </div>
         </div>
@@ -272,28 +529,11 @@ export default function TableCellViewer({
           {isEditing ? (
             <>
               <Button onClick={onSubmit} disabled={isSaving}>
-                {isSaving ? "Guardando..." : "Guardar"}
+                {isSaving ? "Guardando..." : isCreate ? "Crear agente" : "Guardar"}
               </Button>
               <Button
                 variant="outline"
-                onClick={() => {
-                  reset({
-                    nombre: item.nombre,
-                    apellido: item.apellido,
-                    puesto: item.puesto,
-                    legajo: String(item.legajo),
-                    dni: String(item.dni),
-                    localidad: item.localidad,
-                    domicilio: item.domicilio,
-                    nro_celular: item.nro_celular,
-                    fecha_nacimiento: item.fecha_nacimiento,
-                    fecha_ingreso: item.fecha_ingreso,
-                    nivel_estudios: item.nivel_estudios,
-                    cantidad_hijos: String(item.cantidad_hijos),
-                  })
-                  setErrorMessage(null)
-                  setIsEditing(false)
-                }}
+                onClick={handleCancel}
                 disabled={isSaving}
               >
                 Cancelar

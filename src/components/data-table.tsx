@@ -27,24 +27,18 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
   type Row,
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import type { Agent } from "@/types/agent"
+import type { Agent, Dependencia } from "@/types/agent"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -55,7 +49,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import TableCellViewer from "@/components/TableCellViewer"
-import AgentForm from "@/AgentForm"
 import {
   Select,
   SelectContent,
@@ -81,7 +74,40 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsRightIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ChevronsUpDownIcon,
 } from "lucide-react"
+
+const API_BASE = "https://presentismo-backend.vercel.app/api"
+
+// Clickable column header that toggles ascending/descending/no sort.
+function SortableHeader({
+  column,
+  label,
+}: {
+  column: Column<Agent, unknown>
+  label: string
+}) {
+  const sorted = column.getIsSorted()
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      className="-ml-3 h-8 data-[state=open]:bg-accent"
+      onClick={() => column.toggleSorting(sorted === "asc")}
+    >
+      {label}
+      {sorted === "asc" ? (
+        <ArrowUpIcon className="ml-2 size-4" />
+      ) : sorted === "desc" ? (
+        <ArrowDownIcon className="ml-2 size-4" />
+      ) : (
+        <ChevronsUpDownIcon className="ml-2 size-4 text-muted-foreground/50" />
+      )}
+    </Button>
+  )
+}
 
 
 // `schema` is imported from `src/types/agent.ts`
@@ -110,10 +136,14 @@ function ActionsCell({
   item,
   open,
   onOpenChange,
+  dependencias,
+  onSave,
 }: {
   item: Agent
   open: boolean
   onOpenChange: (open: boolean) => void
+  dependencias: Dependencia[]
+  onSave?: (updatedItem: Agent) => void
 }) {
   return (
     <DropdownMenu>
@@ -140,7 +170,13 @@ function ActionsCell({
         <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
       </DropdownMenuContent>
 
-      <TableCellViewer item={item} open={open} onOpenChange={onOpenChange} />
+      <TableCellViewer
+        item={item}
+        open={open}
+        onOpenChange={onOpenChange}
+        dependencias={dependencias}
+        onSave={onSave}
+      />
     </DropdownMenu>
   )
 }
@@ -179,17 +215,35 @@ export function DataTable({
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
+  const [dependencias, setDependencias] = React.useState<Dependencia[]>([])
 
   React.useEffect(() => {
     setData(initialData)
   }, [initialData])
+
+  // Dependencias rarely change, so fetch the catalog once on mount.
+  React.useEffect(() => {
+    const fetchDependencias = async () => {
+      try {
+        const token = localStorage.getItem("auth_token")
+        const response = await fetch(`${API_BASE}/dependencias`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!response.ok) throw new Error("Error al obtener las dependencias")
+        setDependencias(await response.json())
+      } catch (error) {
+        console.error("Error al obtener las dependencias:", error)
+      }
+    }
+
+    fetchDependencias()
+  }, [])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-  const [addOpen, setAddOpen] = React.useState(false)
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -234,10 +288,11 @@ export function DataTable({
       },
       {
         accessorKey: "apellido",
-        header: "Agente",
+        header: ({ column }) => <SortableHeader column={column} label="Agente" />,
         cell: ({ row }) => (
           <TableCellViewer
             item={row.original}
+            dependencias={dependencias}
             onSave={(updatedItem) => {
               setData((prev) =>
                 prev.map((current) =>
@@ -251,34 +306,34 @@ export function DataTable({
       },
       {
         accessorKey: "legajo",
-        header: "Legajo",
+        header: ({ column }) => <SortableHeader column={column} label="Legajo" />,
         cell: ({ row }) => <div className="font-medium">{row.original.legajo}</div>,
       },
       {
         accessorKey: "dni",
-        header: "DNI",
+        header: ({ column }) => <SortableHeader column={column} label="DNI" />,
         cell: ({ row }) => <div>{row.original.dni}</div>,
       },
       {
         accessorKey: "puesto",
-        header: "Puesto",
+        header: ({ column }) => <SortableHeader column={column} label="Puesto" />,
         cell: ({ row }) => (
           <div className="max-w-[260px] truncate text-sm">{row.original.puesto}</div>
         ),
       },
       {
         accessorKey: "localidad",
-        header: "Localidad",
+        header: ({ column }) => <SortableHeader column={column} label="Localidad" />,
         cell: ({ row }) => <div>{row.original.localidad}</div>,
       },
       {
         accessorKey: "fecha_ingreso",
-        header: "Ingreso",
+        header: ({ column }) => <SortableHeader column={column} label="Ingreso" />,
         cell: ({ row }) => <div>{row.original.fecha_ingreso}</div>,
       },
       {
         accessorKey: "sexo",
-        header: "Sexo",
+        header: ({ column }) => <SortableHeader column={column} label="Sexo" />,
         cell: ({ row }) => (
           <Badge variant="outline" className="px-1.5 text-muted-foreground">
             {row.original.sexo}
@@ -294,11 +349,19 @@ export function DataTable({
             onOpenChange={(nextOpen) => {
               setActiveDrawerId(nextOpen ? row.original.id : null)
             }}
+            dependencias={dependencias}
+            onSave={(updatedItem) => {
+              setData((prev) =>
+                prev.map((current) =>
+                  current.id === updatedItem.id ? updatedItem : current
+                )
+              )
+            }}
           />
         ),
       },
     ],
-    [activeDrawerId]
+    [activeDrawerId, dependencias]
   )
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -383,46 +446,19 @@ export function DataTable({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Drawer open={addOpen} onOpenChange={setAddOpen}>
-            <DrawerTrigger asChild>
+          <TableCellViewer
+            mode="create"
+            dependencias={dependencias}
+            trigger={
               <Button variant="outline" size="sm" className="ml-2">
                 <PlusIcon data-icon="inline-start" />
                 Agregar agente
               </Button>
-            </DrawerTrigger>
-
-            <DrawerContent className="inset-0 flex items-center justify-center bg-black/40 p-4">
-              <div className="w-full max-w-[680px] rounded-[2rem] border border-white/10 bg-slate-950/95 shadow-2xl shadow-black/40 ring-1 ring-white/5">
-                <div className="p-6 md:p-8">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <div className="grid h-16 w-16 place-items-center rounded-full bg-emerald-500/10 text-emerald-300 shadow-md shadow-emerald-500/10">
-                      <PlusIcon className="h-7 w-7" />
-                    </div>
-                    <div>
-                      <DrawerTitle className="text-2xl text-white">Agregar agente</DrawerTitle>
-                      <DrawerDescription className="text-sm text-slate-400">
-                        Complete los datos y presione Cargar Agente.
-                      </DrawerDescription>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <AgentForm
-                      onAdd={(agente) => {
-                        setData((prev) => [...prev, agente])
-                      }}
-                      onClose={() => setAddOpen(false)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </DrawerContent>
-          </Drawer>
-          {/* <Button variant="outline" size="sm">
-            <PlusIcon
-            />
-            <span className="hidden lg:inline">Add Section</span>
-          </Button> */}
+            }
+            onCreate={(agente) => {
+              setData((prev) => [...prev, agente])
+            }}
+          />
         </div>
       </div>
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">

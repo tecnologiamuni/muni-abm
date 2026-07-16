@@ -23,4 +23,11 @@ export const agentSchema = z.object({
 
 export type Agent = z.infer<typeof agentSchema>
 
+export const dependenciaSchema = z.object({
+  id: z.number(),
+  nombre: z.string(),
+})
+
+export type Dependencia = z.infer<typeof dependenciaSchema>
+
 export default agentSchema
