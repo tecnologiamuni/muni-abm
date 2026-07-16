@@ -20,7 +20,15 @@ import {
 } from "@/components/ui/sidebar"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "@/store/auth"
-import { EllipsisVerticalIcon, CircleUserRoundIcon, LogOutIcon } from "lucide-react"
+import { decodeToken } from "@/lib/auth"
+import { useTheme } from "@/components/theme-provider"
+import {
+  EllipsisVerticalIcon,
+  CircleUserRoundIcon,
+  LogOutIcon,
+  MoonIcon,
+  SunIcon,
+} from "lucide-react"
 
 export function NavUser({
   user,
@@ -34,6 +42,19 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const navigate = useNavigate()
   const clearToken = useAuthStore((state) => state.clearToken)
+  const token = useAuthStore((state) => state.token)
+  const { theme, setTheme } = useTheme()
+
+  const payload = decodeToken(token)
+  const displayName = payload?.username ?? user.name
+  const displayRole = payload?.role ?? user.email
+  const initials = displayName.slice(0, 2).toUpperCase()
+
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
 
   const handleLogout = () => {
     clearToken()
@@ -50,13 +71,13 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg grayscale">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage src={user.avatar} alt={displayName} />
+                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-medium">{displayName}</span>
                 <span className="truncate text-xs text-muted-foreground">
-                  {user.email}
+                  {displayRole}
                 </span>
               </div>
               <EllipsisVerticalIcon className="ml-auto size-4" />
@@ -71,13 +92,13 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage src={user.avatar} alt={displayName} />
+                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
+                  <span className="truncate font-medium">{displayName}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.email}
+                    {displayRole}
                   </span>
                 </div>
               </div>
@@ -88,6 +109,15 @@ export function NavUser({
                 <CircleUserRoundIcon
                 />
                 Mi Cuenta
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault()
+                  setTheme(isDark ? "light" : "dark")
+                }}
+              >
+                {isDark ? <SunIcon /> : <MoonIcon />}
+                {isDark ? "Tema claro" : "Tema oscuro"}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

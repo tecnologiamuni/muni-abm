@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
-
-const API_BASE = "https://presentismo-backend.vercel.app/api"
+import { API_BASE } from "@/lib/api"
 
 type AuthMode = "login" | "register"
 
@@ -26,7 +25,7 @@ export function LoginForm({ className }: { className?: string }) {
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const setToken = useAuthStore((state) => state.setToken)
+  const setSession = useAuthStore((state) => state.setSession)
   const navigate = useNavigate()
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -60,7 +59,7 @@ export function LoginForm({ className }: { className?: string }) {
           throw new Error("No se recibió token de autenticación")
         }
 
-        setToken(data.token)
+        setSession(data.token, data.refreshToken ?? null)
         navigate("/dashboard")
         return
       }

@@ -28,8 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import type { Agent, Dependencia } from "@/types/agent"
-
-const API_BASE = "https://presentismo-backend.vercel.app/api"
+import { apiFetch } from "@/lib/api"
 
 const EMPTY_AGENT: Agent = {
   id: 0,
@@ -303,9 +302,6 @@ export default function TableCellViewer({
     setIsSaving(true)
     setErrorMessage(null)
     try {
-      const token = localStorage.getItem("auth_token")
-      if (!token) throw new Error("No hay sesión activa")
-
       const payload = {
         nombre: values.nombre,
         apellido: values.apellido,
@@ -324,13 +320,12 @@ export default function TableCellViewer({
         es_jerarquico: values.es_jerarquico || "NO",
       }
 
-      const response = await fetch(
-        isCreate ? `${API_BASE}/agentes` : `${API_BASE}/agentes/${resolvedItem.legajo}`,
+      const response = await apiFetch(
+        isCreate ? `/agentes` : `/agentes/${resolvedItem.legajo}`,
         {
           method: isCreate ? "POST" : "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         }

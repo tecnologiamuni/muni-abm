@@ -1,4 +1,5 @@
 import * as React from "react"
+import { apiFetch } from "@/lib/api"
 import {
   closestCenter,
   DndContext,
@@ -80,8 +81,6 @@ import {
   ArrowDownIcon,
   ChevronsUpDownIcon,
 } from "lucide-react"
-
-const API_BASE = "https://presentismo-backend.vercel.app/api"
 
 // Clickable column header that toggles ascending/descending/no sort.
 function SortableHeader({
@@ -227,10 +226,7 @@ export function DataTable({
   React.useEffect(() => {
     const fetchDependencias = async () => {
       try {
-        const token = localStorage.getItem("auth_token")
-        const response = await fetch(`${API_BASE}/dependencias`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        const response = await apiFetch("/dependencias")
         if (!response.ok) throw new Error("Error al obtener las dependencias")
         setDependencias(await response.json())
       } catch (error) {

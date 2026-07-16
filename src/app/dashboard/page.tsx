@@ -4,10 +4,9 @@ import { DataTable } from "@/components/data-table"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useNavigate } from "react-router-dom"
+import { apiFetch } from "@/lib/api"
 
 export default function Dashboard() {
-  const API_BASE = "https://presentismo-backend.vercel.app/api"
-
   const navigate = useNavigate()
   const [agentes, setAgentes] = useState([])
 
@@ -25,11 +24,7 @@ export default function Dashboard() {
     // fetch agentes from the API with token in authorization header
     const fetchAgentes = async () => {
       try {
-        const response = await fetch(`${API_BASE}/agentes`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`
-          }
-        })
+        const response = await apiFetch("/agentes")
         if (!response.ok) {
           throw new Error("Error al obtener los agentes")
         }
