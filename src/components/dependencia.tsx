@@ -36,7 +36,7 @@ const dependencias = [
   },
 ]
 
-export default function Dependencia() {
+export default function Dependencias() {
   const [buscar, setBuscar] = useState("")
 
   const resultado = useMemo(() => {

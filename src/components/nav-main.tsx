@@ -1,13 +1,13 @@
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
-import { CirclePlusIcon, MailIcon } from "lucide-react";
+} from "@/components/ui/sidebar"
+import { Link } from "react-router-dom";
+// import { CirclePlusIcon, MailIcon } from "lucide-react"
 
 export function NavMain({
   items,
@@ -21,7 +21,7 @@ export function NavMain({
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
-        <SidebarMenu>
+        {/* <SidebarMenu>
           <SidebarMenuItem className="flex items-center gap-2">
          <SidebarMenuButton
             asChild
@@ -38,8 +38,7 @@ export function NavMain({
               <MailIcon />
             </Button>
           </SidebarMenuItem>
-        </SidebarMenu>
-
+        </SidebarMenu> */}
         <SidebarMenu>
           {items.map((item) => (
             <SidebarMenuItem key={item.title}>

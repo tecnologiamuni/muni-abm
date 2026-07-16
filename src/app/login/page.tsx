@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { GalleryVerticalEnd } from "lucide-react"
+// import { GalleryVerticalEnd } from "lucide-react"
 
 import { LoginForm } from "@/components/login-form"
 import { useAuthStore } from "@/store/auth"
@@ -21,10 +21,16 @@ export default function LoginPage() {
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
           <a href="#" className="flex items-center gap-2 font-medium">
-            <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <GalleryVerticalEnd className="size-4" />
-            </div>
-            Municipalidad de Rivadavia
+            <img
+              src="/logo-color.png"
+              alt="Municipalidad de Rivadavia"
+              className="h-16 dark:hidden"
+            />
+            <img
+              src="/logo-white.png"
+              alt="Municipalidad de Rivadavia"
+              className="hidden h-16 dark:inline"
+            />
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">
