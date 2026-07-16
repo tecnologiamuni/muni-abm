@@ -3,6 +3,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useForm, useWatch, type UseFormRegister } from "react-hook-form"
 import {
   Drawer,
   DrawerClose,
@@ -17,31 +18,44 @@ import type { Agent } from "@/types/agent"
 
 const API_BASE = "https://presentismo-backend.vercel.app/api"
 
+type FormValues = {
+  nombre: string
+  apellido: string
+  puesto: string
+  legajo: string
+  dni: string
+  localidad: string
+  domicilio: string
+  nro_celular: string
+  fecha_nacimiento: string
+  fecha_ingreso: string
+  nivel_estudios: string
+  cantidad_hijos: string
+}
+
 function InfoRow({
   label,
   value,
   field,
   isEditing,
   valueStr,
-  onChange,
-  firstInputRef,
+  registerFn,
 }: {
   label: string
   value: React.ReactNode
-  field?: string
+  field?: keyof FormValues
   isEditing: boolean
   valueStr?: string
-  onChange?: (field: string, value: string) => void
-  firstInputRef?: React.RefObject<HTMLInputElement | null>
+  registerFn?: UseFormRegister<FormValues>
 }) {
   return (
     <div className="flex items-center justify-between gap-3 border-b pb-2">
       <span className="text-muted-foreground">{label}</span>
       {isEditing && field ? (
         <Input
-          ref={field === "nombre" ? (firstInputRef as any) : undefined}
-          value={String(valueStr ?? "")}
-          onChange={(event) => onChange?.(field, event.target.value)}
+          key={`${field}-${String(value ?? "")}`}
+          {...(registerFn ? registerFn(field) : {})}
+          defaultValue={String(valueStr ?? value ?? "")}
           className="h-8 max-w-44"
         />
       ) : (
@@ -93,77 +107,59 @@ export default function TableCellViewer({
   const [isSaving, setIsSaving] = React.useState(false)
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [currentItem, setCurrentItem] = React.useState(item)
-  const firstInputRef = React.useRef<HTMLInputElement | null>(null)
-  const [formData, setFormData] = React.useState({
-    nombre: item.nombre,
-    apellido: item.apellido,
-    puesto: item.puesto,
-    legajo: String(item.legajo),
-    dni: String(item.dni),
-    localidad: item.localidad,
-    domicilio: item.domicilio,
-    nro_celular: item.nro_celular,
-    fecha_nacimiento: item.fecha_nacimiento,
-    fecha_ingreso: item.fecha_ingreso,
-    nivel_estudios: item.nivel_estudios,
-    cantidad_hijos: String(item.cantidad_hijos),
+
+  const buildFormValues = React.useCallback((source: Agent): FormValues => ({
+    nombre: source.nombre,
+    apellido: source.apellido,
+    puesto: source.puesto,
+    legajo: String(source.legajo),
+    dni: String(source.dni),
+    localidad: source.localidad,
+    domicilio: source.domicilio,
+    nro_celular: source.nro_celular,
+    fecha_nacimiento: source.fecha_nacimiento,
+    fecha_ingreso: source.fecha_ingreso,
+    nivel_estudios: source.nivel_estudios,
+    cantidad_hijos: String(source.cantidad_hijos),
+  }), [])
+
+  const { register, handleSubmit, reset, control, setFocus } = useForm<FormValues>({
+    defaultValues: buildFormValues(item),
   })
 
-  const syncFromItem = React.useCallback((source: Agent) => {
-    setCurrentItem(source)
-    setFormData({
-      nombre: source.nombre,
-      apellido: source.apellido,
-      puesto: source.puesto,
-      legajo: String(source.legajo),
-      dni: String(source.dni),
-      localidad: source.localidad,
-      domicilio: source.domicilio,
-      nro_celular: source.nro_celular,
-      fecha_nacimiento: source.fecha_nacimiento,
-      fecha_ingreso: source.fecha_ingreso,
-      nivel_estudios: source.nivel_estudios,
-      cantidad_hijos: String(source.cantidad_hijos),
-    })
-  }, [])
+  const watched = useWatch<FormValues>({ control })
 
   React.useEffect(() => {
-    syncFromItem(item)
-    setIsEditing(false)
-    setErrorMessage(null)
-  }, [item, syncFromItem])
+    reset(buildFormValues(currentItem))
+  }, [currentItem, reset, buildFormValues])
 
   React.useEffect(() => {
     if (isEditing) {
-      requestAnimationFrame(() => {
-        firstInputRef.current?.focus()
-      })
+      reset(buildFormValues(currentItem))
+      setFocus("nombre")
     }
-  }, [isEditing])
+  }, [isEditing, currentItem, reset, buildFormValues, setFocus])
 
-  const handleSave = async () => {
+  const onSubmit = handleSubmit(async (values) => {
     setIsSaving(true)
     setErrorMessage(null)
-
     try {
       const token = localStorage.getItem("auth_token")
-      if (!token) {
-        throw new Error("No hay sesión activa")
-      }
+      if (!token) throw new Error("No hay sesión activa")
 
       const payload = {
-        nombre: formData.nombre,
-        apellido: formData.apellido,
-        legajo: Number(formData.legajo),
-        dni: Number(formData.dni),
-        puesto: formData.puesto,
-        localidad: formData.localidad,
-        domicilio: formData.domicilio,
-        nro_celular: formData.nro_celular,
-        fecha_nacimiento: formData.fecha_nacimiento,
-        fecha_ingreso: formData.fecha_ingreso,
-        nivel_estudios: formData.nivel_estudios,
-        cantidad_hijos: Number(formData.cantidad_hijos) || 0,
+        nombre: values.nombre,
+        apellido: values.apellido,
+        legajo: Number(values.legajo),
+        dni: Number(values.dni),
+        puesto: values.puesto,
+        localidad: values.localidad,
+        domicilio: values.domicilio,
+        nro_celular: values.nro_celular,
+        fecha_nacimiento: values.fecha_nacimiento,
+        fecha_ingreso: values.fecha_ingreso,
+        nivel_estudios: values.nivel_estudios,
+        cantidad_hijos: Number(values.cantidad_hijos) || 0,
       }
 
       const response = await fetch(`${API_BASE}/agentes/${item.legajo}`, {
@@ -181,21 +177,20 @@ export default function TableCellViewer({
       }
 
       const updatedAgent = {
-        ...currentItem,
+        ...item,
         ...payload,
       }
 
       setCurrentItem(updatedAgent)
       onSave?.(updatedAgent)
+      reset(buildFormValues(updatedAgent))
       setIsEditing(false)
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "No se pudo guardar el agente"
-      )
+      setErrorMessage(error instanceof Error ? error.message : "No se pudo guardar el agente")
     } finally {
       setIsSaving(false)
     }
-  }
+  })
 
   return (
     <Drawer
@@ -214,17 +209,17 @@ export default function TableCellViewer({
       )}
       <DrawerContent className="max-w-[500px] ml-auto">
         <DrawerHeader className="border-b pb-6">
-          <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
-              {item.nombre[0]}
-              {item.apellido[0]}
+              {currentItem.nombre[0]}
+              {currentItem.apellido[0]}
             </div>
             <div>
               <DrawerTitle className="text-xl">
-                {isEditing ? `${formData.apellido} ${formData.nombre}` : `${currentItem.apellido} ${currentItem.nombre}`}
+                {isEditing ? `${watched?.apellido ?? currentItem.apellido} ${watched?.nombre ?? currentItem.nombre}` : `${currentItem.apellido} ${currentItem.nombre}`}
               </DrawerTitle>
               <DrawerDescription>
-                {isEditing ? formData.puesto : currentItem.puesto}
+                {isEditing ? watched?.puesto ?? currentItem.puesto : currentItem.puesto}
               </DrawerDescription>
             </div>
           </div>
@@ -242,18 +237,18 @@ export default function TableCellViewer({
               ) : null}
 
               <div className="space-y-4">
-                <InfoRow label="Nombre" value={currentItem.nombre} field="nombre" isEditing={isEditing} valueStr={formData.nombre} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Apellido" value={currentItem.apellido} field="apellido" isEditing={isEditing} valueStr={formData.apellido} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Legajo" value={currentItem.legajo} field="legajo" isEditing={isEditing} valueStr={formData.legajo} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="DNI" value={currentItem.dni} field="dni" isEditing={isEditing} valueStr={formData.dni} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Puesto" value={currentItem.puesto} field="puesto" isEditing={isEditing} valueStr={formData.puesto} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Localidad" value={currentItem.localidad} field="localidad" isEditing={isEditing} valueStr={formData.localidad} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Domicilio" value={currentItem.domicilio} field="domicilio" isEditing={isEditing} valueStr={formData.domicilio} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Celular" value={currentItem.nro_celular} field="nro_celular" isEditing={isEditing} valueStr={formData.nro_celular} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Nacimiento" value={currentItem.fecha_nacimiento} field="fecha_nacimiento" isEditing={isEditing} valueStr={formData.fecha_nacimiento} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Ingreso" value={currentItem.fecha_ingreso} field="fecha_ingreso" isEditing={isEditing} valueStr={formData.fecha_ingreso} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Nivel" value={currentItem.nivel_estudios} field="nivel_estudios" isEditing={isEditing} valueStr={formData.nivel_estudios} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
-                <InfoRow label="Hijos" value={currentItem.cantidad_hijos} field="cantidad_hijos" isEditing={isEditing} valueStr={formData.cantidad_hijos} onChange={(field, val) => setFormData((c) => ({ ...c, [field]: val }))} firstInputRef={firstInputRef} />
+                <InfoRow label="Nombre" value={currentItem.nombre} field="nombre" isEditing={isEditing} valueStr={watched?.nombre} registerFn={register} />
+                <InfoRow label="Apellido" value={currentItem.apellido} field="apellido" isEditing={isEditing} valueStr={watched?.apellido} registerFn={register} />
+                <InfoRow label="Legajo" value={currentItem.legajo} field="legajo" isEditing={isEditing} valueStr={watched?.legajo} registerFn={register} />
+                <InfoRow label="DNI" value={currentItem.dni} field="dni" isEditing={isEditing} valueStr={watched?.dni} registerFn={register} />
+                <InfoRow label="Puesto" value={currentItem.puesto} field="puesto" isEditing={isEditing} valueStr={watched?.puesto} registerFn={register} />
+                <InfoRow label="Localidad" value={currentItem.localidad} field="localidad" isEditing={isEditing} valueStr={watched?.localidad} registerFn={register} />
+                <InfoRow label="Domicilio" value={currentItem.domicilio} field="domicilio" isEditing={isEditing} valueStr={watched?.domicilio} registerFn={register} />
+                <InfoRow label="Celular" value={currentItem.nro_celular} field="nro_celular" isEditing={isEditing} valueStr={watched?.nro_celular} registerFn={register} />
+                <InfoRow label="Nacimiento" value={currentItem.fecha_nacimiento} field="fecha_nacimiento" isEditing={isEditing} valueStr={watched?.fecha_nacimiento} registerFn={register} />
+                <InfoRow label="Ingreso" value={currentItem.fecha_ingreso} field="fecha_ingreso" isEditing={isEditing} valueStr={watched?.fecha_ingreso} registerFn={register} />
+                <InfoRow label="Nivel" value={currentItem.nivel_estudios} field="nivel_estudios" isEditing={isEditing} valueStr={watched?.nivel_estudios} registerFn={register} />
+                <InfoRow label="Hijos" value={currentItem.cantidad_hijos} field="cantidad_hijos" isEditing={isEditing} valueStr={watched?.cantidad_hijos} registerFn={register} />
               </div>
             </section>
 
@@ -276,13 +271,13 @@ export default function TableCellViewer({
         <DrawerFooter className="border-t">
           {isEditing ? (
             <>
-              <Button onClick={handleSave} disabled={isSaving}>
+              <Button onClick={onSubmit} disabled={isSaving}>
                 {isSaving ? "Guardando..." : "Guardar"}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  setFormData({
+                  reset({
                     nombre: item.nombre,
                     apellido: item.apellido,
                     puesto: item.puesto,
