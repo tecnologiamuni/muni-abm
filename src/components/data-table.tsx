@@ -54,6 +54,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
 import TableCellViewer from "@/components/TableCellViewer"
 import AgentForm from "@/AgentForm"
 import {
@@ -76,6 +77,7 @@ import {
   EllipsisVerticalIcon,
   Columns3Icon,
   PlusIcon,
+  SearchIcon,
   ChevronDownIcon,
   ChevronsLeftIcon,
   ChevronLeftIcon,
@@ -191,6 +193,7 @@ export function DataTable({
   )
   const [addOpen, setAddOpen] = React.useState(false)
   const [sorting, setSorting] = React.useState<SortingState>([])
+  const [globalFilter, setGlobalFilter] = React.useState("")
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
     pageSize: 10,
@@ -319,15 +322,31 @@ export function DataTable({
       columnVisibility,
       rowSelection,
       columnFilters,
+      globalFilter,
       pagination,
     },
     getRowId: (row) => row.id.toString(),
     enableRowSelection: true,
     onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
     onPaginationChange: setPagination,
+    globalFilterFn: (row, _, filterValue) => {
+      const search = String(filterValue).toLowerCase().trim()
+      if (!search) return true
+
+      const nombre = String(row.original.nombre ?? "").toLowerCase()
+      const apellido = String(row.original.apellido ?? "").toLowerCase()
+      const legajo = String(row.original.legajo ?? "").toLowerCase()
+
+      return (
+        nombre.includes(search) ||
+        apellido.includes(search) ||
+        legajo.includes(search)
+      )
+    },
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -350,7 +369,21 @@ export function DataTable({
   return (
     <div className="w-full flex flex-col justify-start gap-6">
       <div className="flex items-center justify-between px-4 lg:px-6">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-1 items-center gap-2">
+          <div className="relative w-full max-w-[360px] lg:max-w-[420px]">
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              value={globalFilter}
+              onChange={(event) => {
+                setGlobalFilter(event.target.value)
+                table.setPageIndex(0)
+              }}
+              placeholder="Buscar por nombre, apellido o legajo"
+              className="h-10 w-full pl-10"
+            />
+          </div>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
