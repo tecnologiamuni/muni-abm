@@ -23,8 +23,8 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
+      title: "Dependencia",
+      url: "/dependencia",
       icon: (
         <LayoutDashboardIcon
         />
