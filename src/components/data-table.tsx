@@ -1,5 +1,6 @@
 import * as React from "react"
 import { apiFetch } from "@/lib/api"
+import { exportAgentesToExcel } from "@/lib/export-excel"
 import {
   closestCenter,
   DndContext,
@@ -71,6 +72,7 @@ import {
   EllipsisVerticalIcon,
   Columns3Icon,
   PlusIcon,
+  DownloadIcon,
   SearchIcon,
   ChevronDownIcon,
   ChevronsLeftIcon,
@@ -414,6 +416,11 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
+  const selectedRows = React.useMemo(() => {
+    const selection = rowSelection as Record<string, boolean>
+    return data.filter((row) => selection[row.id.toString()])
+  }, [data, rowSelection])
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
     if (active && over && active.id !== over.id) {
@@ -489,6 +496,38 @@ export function DataTable({
             }}
           />
         </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="ml-2 shrink-0">
+              <DownloadIcon data-icon="inline-start" />
+              Exportar a Excel
+              <ChevronDownIcon data-icon="inline-end" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem
+              onSelect={() =>
+                exportAgentesToExcel(data, dependencias, "agentes.xls")
+              }
+            >
+              Todos los registros ({data.length})
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              disabled={selectedRows.length === 0}
+              onSelect={() =>
+                exportAgentesToExcel(
+                  selectedRows,
+                  dependencias,
+                  "agentes-seleccionados.xls"
+                )
+              }
+            >
+              Registros seleccionados ({selectedRows.length})
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="relative flex flex-col gap-4 overflow-auto px-4 lg:px-6">
         <div className="overflow-hidden rounded-lg border">

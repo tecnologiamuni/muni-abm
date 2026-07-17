@@ -10,7 +10,6 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { 
@@ -194,15 +193,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
+            <a
+              href="#"
+              className="flex items-center justify-center px-2 py-2"
             >
-              <a href="#">
-                {/* <CommandIcon className="size-5!" /> */}
-                <span className="text-base font-semibold">Municipalidad de Rivadavia</span>
-              </a>
-            </SidebarMenuButton>
+              <img
+                src="/logo-color.png"
+                alt="Municipalidad de Rivadavia"
+                className="h-16 w-auto max-w-full object-contain dark:hidden"
+              />
+              <img
+                src="/logo-white.png"
+                alt="Municipalidad de Rivadavia"
+                className="hidden h-16 w-auto max-w-full object-contain dark:inline"
+              />
+            </a>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
