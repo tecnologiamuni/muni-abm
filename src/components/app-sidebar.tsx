@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link, useLocation } from "react-router-dom"
 
 // import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -11,6 +12,10 @@ import {
   SidebarHeader,
   SidebarMenu,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar"
 import { 
   LayoutDashboardIcon, 
@@ -25,6 +30,7 @@ import {
   SearchIcon, 
   DatabaseIcon, 
   FileChartColumnIcon, 
+  ChevronDownIcon,
   // CommandIcon,
   FileIcon} from "lucide-react"
 
@@ -188,6 +194,15 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const location = useLocation()
+  const [licenciasOpen, setLicenciasOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    if (location.pathname.startsWith("/licencias") || location.pathname === "/ver-licencias") {
+      setLicenciasOpen(true)
+    }
+  }, [location.pathname])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -213,6 +228,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
+        <SidebarMenu className="mt-2">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Licencias">
+              <button
+                type="button"
+                className="flex w-full items-center gap-2"
+                onClick={() => setLicenciasOpen((open) => !open)}
+              >
+                <FileTextIcon />
+                <span>Licencias</span>
+                <ChevronDownIcon
+                  className={`ml-auto transition-transform ${
+                    licenciasOpen ? "rotate-180" : "rotate-0"
+                  }`}
+                />
+              </button>
+            </SidebarMenuButton>
+            {licenciasOpen && (
+              <SidebarMenuSub>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link to="/licencias">Crear Licencias</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link to="/ver-licencias">Ver Licencias</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+                <SidebarMenuSubItem>
+                  <SidebarMenuSubButton asChild>
+                    <Link to="/licencias-expiradas">Licencia Exp</Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              </SidebarMenuSub>
+            )}
+          </SidebarMenuItem>
+        </SidebarMenu>
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

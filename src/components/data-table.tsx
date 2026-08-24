@@ -304,11 +304,13 @@ export function DataTable({
           />
         ),
         enableHiding: false,
+        enableGlobalFilter: true,
       },
       {
         accessorKey: "legajo",
         header: ({ column }) => <SortableHeader column={column} label="Legajo" />,
         cell: ({ row }) => <div className="font-medium">{row.original.legajo}</div>,
+        enableGlobalFilter: true,
       },
       {
         accessorKey: "dni",
