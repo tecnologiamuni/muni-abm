@@ -7,6 +7,7 @@ import Licencias from "./components/licencias";
 import VerLicencias from "./components/ver-licencias";
 import LicenciasExpiradas from "./components/licencias-expiradas";
 import Dependencias from "./components/dependencia";
+import Novedades from "./components/novedades";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/ver-licencias" element={<VerLicencias />} />
         <Route path="/licencias-expiradas" element={<LicenciasExpiradas />} />
         <Route path="/dependencias" element={<Dependencias />} />
+        <Route path="/novedades" element={<Novedades />} />
       </Routes>
     </Suspense>
   );

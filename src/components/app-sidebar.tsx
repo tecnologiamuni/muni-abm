@@ -31,6 +31,7 @@ import {
   DatabaseIcon, 
   FileChartColumnIcon, 
   ChevronDownIcon,
+  NewspaperIcon,
   // CommandIcon,
   FileIcon} from "lucide-react"
 
@@ -56,6 +57,11 @@ const data = {
         <ListIcon
         />
       ),
+    },
+    {
+      title: "Novedades",
+      url: "/novedades",
+      icon: <NewspaperIcon />,
     },
     // {
     //   title: "Analytics",
@@ -228,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <SidebarMenu className="mt-2">
+        <SidebarMenu className="mt-2 px-2">
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Licencias">
               <button
