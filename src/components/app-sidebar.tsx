@@ -43,6 +43,11 @@ const data = {
   },
   navMain: [
     {
+      title: "Novedades",
+      url: "/novedades",
+      icon: <NewspaperIcon />,
+    },
+    {
       title: "Agentes",
       url: "/agentes",
       icon: (
@@ -57,11 +62,6 @@ const data = {
         <ListIcon
         />
       ),
-    },
-    {
-      title: "Novedades",
-      url: "/novedades",
-      icon: <NewspaperIcon />,
     },
     // {
     //   title: "Analytics",

@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react"
 import { Search, Building2, MapPin } from "lucide-react"
 
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-
+import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -46,92 +43,43 @@ export default function Dependencias() {
   }, [buscar])
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
-      }
-    >
-      <AppSidebar variant="inset" />
+    <AppLayout title="Dependencias" description="Buscá una dependencia municipal por nombre.">
+      <div className="relative max-w-xl">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          className="h-10 pl-10"
+          placeholder="Buscar dependencia..."
+          value={buscar}
+          onChange={(e) => setBuscar(e.target.value)}
+        />
+      </div>
 
-      <SidebarInset>
-        <SiteHeader />
-
-        <div className="flex flex-1 flex-col p-6">
-
-          <h1 className="text-3xl font-bold mb-6">
-            Buscar Dependencia
-          </h1>
-
-          <div className="relative mb-8 max-w-xl">
-
-            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-
-            <Input
-              className="pl-10 h-12"
-              placeholder="Buscar dependencia..."
-              value={buscar}
-              onChange={(e) => setBuscar(e.target.value)}
-            />
-
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-
-            {resultado.map((dep) => (
-
-              <Card key={dep.id}>
-
-                <CardContent className="p-6">
-
-                  <div className="flex items-start gap-4">
-
-                    <div className="rounded-lg bg-primary/10 p-3">
-
-                      <Building2 className="h-8 w-8 text-primary" />
-
-                    </div>
-
-                    <div>
-
-                      <h2 className="font-semibold text-xl">
-                        {dep.nombre}
-                      </h2>
-
-                      <div className="flex items-center gap-2 text-muted-foreground mt-2">
-
-                        <MapPin className="h-4 w-4" />
-
-                        {dep.direccion}
-
-                      </div>
-
-                    </div>
-
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {resultado.map((dep) => (
+          <Card key={dep.id}>
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="rounded-lg bg-primary/10 p-3">
+                  <Building2 className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">{dep.nombre}</h2>
+                  <div className="mt-2 flex items-center gap-2 text-muted-foreground">
+                    <MapPin className="h-4 w-4" />
+                    {dep.direccion}
                   </div>
+                </div>
+              </div>
 
-                  <div className="mt-6">
-                    <strong>Categoría:</strong> {dep.categoria}
-                  </div>
+              <div className="mt-6 text-sm">
+                <strong>Categoría:</strong> {dep.categoria}
+              </div>
 
-                  <Button className="w-full mt-6">
-                    Seleccionar
-                  </Button>
-
-                </CardContent>
-
-              </Card>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </SidebarInset>
-
-    </SidebarProvider>
+              <Button className="mt-6 w-full">Seleccionar</Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </AppLayout>
   )
 }
