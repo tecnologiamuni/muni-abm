@@ -44,7 +44,7 @@ const data = {
   navMain: [
     {
       title: "Agentes",
-      url: "/",
+      url: "/agentes",
       icon: (
         <LayoutDashboardIcon
         />
@@ -233,8 +233,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <SidebarMenu className="mt-2 px-2">
+        <NavMain items={data.navMain}>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Licencias">
               <button
@@ -271,7 +270,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuSub>
             )}
           </SidebarMenuItem>
-        </SidebarMenu>
+        </NavMain>
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

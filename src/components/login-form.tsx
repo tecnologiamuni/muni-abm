@@ -60,7 +60,7 @@ export function LoginForm({ className }: { className?: string }) {
         }
 
         setSession(data.token, data.refreshToken ?? null)
-        navigate("/dashboard")
+        navigate("/novedades")
         return
       }
 

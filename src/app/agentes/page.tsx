@@ -6,7 +6,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { useNavigate } from "react-router-dom"
 import { apiFetch } from "@/lib/api"
 
-export default function Dashboard() {
+export default function Agentes() {
   const navigate = useNavigate()
   const [agentes, setAgentes] = useState([])
 
