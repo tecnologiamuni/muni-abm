@@ -49,6 +49,12 @@ const EMPTY_AGENT: Agent = {
   fecha_baja: null,
   motivo_baja: null,
   es_jerarquico: "NO",
+  tipo_contratacion: null,
+  categoria: null,
+  nro: null,
+  fecha_promocion: null,
+  decreto_nro: null,
+  observaciones: null,
 }
 
 const SEXO_OPTIONS = [
@@ -72,6 +78,13 @@ const LOCALIDAD_OPTIONS = [
   "VILLA SENA",
   "COLONIA EL BALDE",
   "OTRO",
+].map((value) => ({ value, label: value }))
+
+const TIPO_CONTRATACION_OPTIONS = [
+  "PLANTA PERMANENTE",
+  "JORNALIZADO",
+  "CONTRATADO",
+  "PLANES",
 ].map((value) => ({ value, label: value }))
 
 const NIVEL_ESTUDIOS_OPTIONS = [
@@ -105,6 +118,12 @@ type FormValues = {
   sexo: string
   dependencia_id: string
   es_jerarquico: string
+  tipo_contratacion: string
+  categoria: string
+  nro: string
+  fecha_promocion: string
+  decreto_nro: string
+  observaciones: string
 }
 
 function InfoRow({
@@ -183,6 +202,38 @@ function SelectRow({
         />
       ) : (
         <span className="font-medium">{displayValue}</span>
+      )}
+    </div>
+  )
+}
+
+function TextAreaRow({
+  label,
+  value,
+  field,
+  isEditing,
+  valueStr,
+  registerFn,
+}: {
+  label: string
+  value: React.ReactNode
+  field: keyof FormValues
+  isEditing: boolean
+  valueStr?: string
+  registerFn: UseFormRegister<FormValues>
+}) {
+  return (
+    <div className="flex flex-col gap-2 border-b pb-2">
+      <span className="text-muted-foreground">{label}</span>
+      {isEditing ? (
+        <textarea
+          key={`${field}-${String(value ?? "")}`}
+          {...registerFn(field)}
+          defaultValue={String(valueStr ?? value ?? "")}
+          className="min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+      ) : (
+        <span className="font-medium">{value || "—"}</span>
       )}
     </div>
   )
@@ -269,6 +320,12 @@ export default function TableCellViewer({
     sexo: source.sexo,
     dependencia_id: source.dependencia_id ? String(source.dependencia_id) : "",
     es_jerarquico: source.es_jerarquico ?? "NO",
+    tipo_contratacion: source.tipo_contratacion ?? "",
+    categoria: source.categoria ?? "",
+    nro: source.nro !== null && source.nro !== undefined ? String(source.nro) : "",
+    fecha_promocion: source.fecha_promocion ?? "",
+    decreto_nro: source.decreto_nro ?? "",
+    observaciones: source.observaciones ?? "",
   }), [])
 
   const { register, handleSubmit, reset, control, setFocus } = useForm<FormValues>({
@@ -318,6 +375,12 @@ export default function TableCellViewer({
         sexo: values.sexo,
         dependencia_id: Number(values.dependencia_id) || 0,
         es_jerarquico: values.es_jerarquico || "NO",
+        tipo_contratacion: values.tipo_contratacion || null,
+        categoria: values.categoria || null,
+        nro: values.nro ? Number(values.nro) : null,
+        fecha_promocion: values.fecha_promocion || null,
+        decreto_nro: values.decreto_nro || null,
+        observaciones: values.observaciones || null,
       }
 
       const response = await apiFetch(
@@ -497,6 +560,26 @@ export default function TableCellViewer({
                   ]}
                   placeholder="Seleccionar"
                 />
+              </div>
+            </section>
+
+            <section>
+              <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Datos laborales</h3>
+              <div className="space-y-4">
+                <SelectRow
+                  label="Tipo de contratación"
+                  isEditing={isEditing}
+                  displayValue={currentItem.tipo_contratacion || "—"}
+                  control={control}
+                  name="tipo_contratacion"
+                  options={TIPO_CONTRATACION_OPTIONS}
+                  placeholder="Seleccionar"
+                />
+                <InfoRow label="Categoría" value={currentItem.categoria || "—"} field="categoria" isEditing={isEditing} valueStr={watched?.categoria} registerFn={register} />
+                <InfoRow label="Nro." value={currentItem.nro ?? "—"} field="nro" isEditing={isEditing} valueStr={watched?.nro} registerFn={register} />
+                <InfoRow label="Fecha de promoción" value={currentItem.fecha_promocion || "—"} field="fecha_promocion" isEditing={isEditing} valueStr={watched?.fecha_promocion} registerFn={register} placeholder="AAAA-MM-DD" />
+                <InfoRow label="Decreto Nro." value={currentItem.decreto_nro || "—"} field="decreto_nro" isEditing={isEditing} valueStr={watched?.decreto_nro} registerFn={register} />
+                <TextAreaRow label="Observaciones" value={currentItem.observaciones} field="observaciones" isEditing={isEditing} valueStr={watched?.observaciones} registerFn={register} />
               </div>
             </section>
 
