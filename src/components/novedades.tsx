@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
+import { fetchLicencias } from "@/lib/licencias"
 import { cn } from "@/lib/utils"
 import type { Agent } from "@/types/agent"
 import type { Licencia } from "@/types/licencia"
@@ -118,14 +119,15 @@ export default function Novedades() {
 
     cargarAgentes()
 
-    const guardadas = localStorage.getItem("licencias_guardadas")
-    if (!guardadas) return
-
-    try {
-      setLicencias(JSON.parse(guardadas))
-    } catch {
-      setLicencias([])
+    const cargarLicencias = async () => {
+      try {
+        setLicencias(await fetchLicencias())
+      } catch (error) {
+        console.error("Error al obtener las licencias:", error)
+      }
     }
+
+    cargarLicencias()
   }, [])
 
   const hoy = useMemo(() => {

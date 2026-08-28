@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { UploadCloud } from "lucide-react"
 
 import { AppLayout } from "@/components/app-layout"
@@ -8,8 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { apiFetch } from "@/lib/api"
+import { fetchLicencia } from "@/lib/licencias"
 import type { Agent } from "@/types/agent"
-import type { Licencia } from "@/types/licencia"
 
 const licenciaTipos = [
   "Enfermedad",
@@ -23,6 +24,10 @@ const licenciaTipos = [
 ]
 
 export default function CrearLicencias() {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get("id")
+
   const [agentes, setAgentes] = useState<Agent[]>([])
   const [empleadoId, setEmpleadoId] = useState("")
   const [empleadoSearch, setEmpleadoSearch] = useState("")
@@ -32,7 +37,11 @@ export default function CrearLicencias() {
   const [inicio, setInicio] = useState("")
   const [fin, setFin] = useState("")
   const [archivo, setArchivo] = useState<File | null>(null)
+  const [archivoActual, setArchivoActual] = useState<{ nombre: string; url: string | null } | null>(null)
   const [observaciones, setObservaciones] = useState("")
+  const [guardando, setGuardando] = useState(false)
+  const [errorEnvio, setErrorEnvio] = useState<string | null>(null)
+  const [mensaje, setMensaje] = useState<string | null>(null)
   const [errors, setErrors] = useState<{
     empleado?: string
     tipoLicencia?: string
@@ -40,8 +49,6 @@ export default function CrearLicencias() {
     fin?: string
   }>({})
   const empleadoFieldRef = useRef<HTMLDivElement | null>(null)
-
-  const LICENCIAS_STORAGE_KEY = "licencias_guardadas"
 
   const agentesFiltrados = useMemo(() => {
     const term = empleadoSearch.trim().toLowerCase()
@@ -87,6 +94,34 @@ export default function CrearLicencias() {
     fetchAgentes()
   }, [])
 
+  useEffect(() => {
+    if (!editId) {
+      return
+    }
+
+    const cargarLicencia = async () => {
+      try {
+        const licencia = await fetchLicencia(Number(editId))
+        setEmpleadoId(String(licencia.agenteId))
+        setEmpleadoSearch(licencia.empleado)
+        setTipoLicencia(licencia.tipoLicencia)
+        setInicio(licencia.inicio)
+        setFin(licencia.fin)
+        setObservaciones(licencia.observaciones)
+        setArchivoActual(
+          licencia.archivoNombre
+            ? { nombre: licencia.archivoNombre, url: licencia.archivoUrl }
+            : null
+        )
+      } catch (error) {
+        console.error("Error al obtener la licencia:", error)
+        setErrorEnvio("No se pudo cargar la licencia a editar.")
+      }
+    }
+
+    cargarLicencia()
+  }, [editId])
+
   const totalDias = useMemo(() => {
     if (!inicio || !fin) {
       return ""
@@ -108,7 +143,7 @@ export default function CrearLicencias() {
 
   const hoy = new Date().toISOString().slice(0, 10)
 
-  const guardarSolicitud = () => {
+  const guardarSolicitud = async () => {
     const validationErrors: typeof errors = {}
 
     if (!selectedEmpleado) {
@@ -132,53 +167,85 @@ export default function CrearLicencias() {
       return
     }
 
-    const nuevaLicencia: Licencia = {
-      id: Date.now(),
-      agenteId: selectedEmpleado!.id,
-      empleado: `${selectedEmpleado!.apellido.toUpperCase()} ${selectedEmpleado!.nombre}`,
-      tipoLicencia,
-      inicio,
-      fin,
-      archivoNombre: archivo?.name ?? null,
-      observaciones,
-      createdAt: new Date().toISOString(),
+    const formData = new FormData()
+    if (!editId) {
+      formData.append("agenteId", String(selectedEmpleado!.id))
+    }
+    formData.append("tipoLicencia", tipoLicencia)
+    formData.append("inicio", inicio)
+    formData.append("fin", fin)
+    formData.append("observaciones", observaciones)
+    if (archivo) {
+      formData.append("archivo", archivo)
     }
 
-    const current = localStorage.getItem(LICENCIAS_STORAGE_KEY)
-    const licencias: Licencia[] = current ? JSON.parse(current) : []
-    localStorage.setItem(LICENCIAS_STORAGE_KEY, JSON.stringify([nuevaLicencia, ...licencias]))
+    setGuardando(true)
+    setErrorEnvio(null)
+    setMensaje(null)
 
-    setEmpleadoId("")
-    setEmpleadoSearch("")
-    setTipoLicencia("")
-    setInicio("")
-    setFin("")
-    setArchivo(null)
-    setObservaciones("")
-    setErrors({})
+    try {
+      const response = await apiFetch(editId ? `/licencias/${editId}` : "/licencias", {
+        method: editId ? "PUT" : "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || "No se pudo guardar la licencia")
+      }
+
+      if (editId) {
+        navigate("/ver-licencias")
+        return
+      }
+
+      setEmpleadoId("")
+      setEmpleadoSearch("")
+      setTipoLicencia("")
+      setInicio("")
+      setFin("")
+      setArchivo(null)
+      setObservaciones("")
+      setErrors({})
+      setMensaje("Licencia guardada correctamente.")
+    } catch (error) {
+      setErrorEnvio(error instanceof Error ? error.message : String(error))
+    } finally {
+      setGuardando(false)
+    }
   }
 
   return (
     <AppLayout
-      title="Crear licencias"
-      description="Completa los datos de la solicitud de licencia."
+      title={editId ? "Editar licencia" : "Crear licencias"}
+      description={
+        editId
+          ? "Modifica los datos de la licencia existente."
+          : "Completa los datos de la solicitud de licencia."
+      }
       actions={
         <>
-          <Button variant="default" size="sm" onClick={guardarSolicitud}>
-            Guardar Solicitud
+          <Button variant="default" size="sm" onClick={guardarSolicitud} disabled={guardando}>
+            {guardando ? "Guardando..." : "Guardar Solicitud"}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
+              if (editId) {
+                navigate("/ver-licencias")
+                return
+              }
               setEmpleadoId("")
               setEmpleadoSearch("")
-              setTipoLicencia("Enfermedad")
+              setTipoLicencia("")
               setInicio("")
               setFin("")
               setArchivo(null)
               setObservaciones("")
-              localStorage.removeItem("licencia_editando")
+              setErrors({})
+              setErrorEnvio(null)
+              setMensaje(null)
             }}
           >
             Cancelar
@@ -186,6 +253,18 @@ export default function CrearLicencias() {
         </>
       }
     >
+      {errorEnvio ? (
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {errorEnvio}
+        </div>
+      ) : null}
+
+      {mensaje ? (
+        <div className="rounded-md border border-primary/50 bg-primary/10 px-4 py-3 text-sm text-primary">
+          {mensaje}
+        </div>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-[3fr_2fr]">
         <Card className="overflow-hidden">
           <CardHeader className="gap-2">
@@ -257,9 +336,10 @@ export default function CrearLicencias() {
                   }}
                   placeholder="Buscar por apellido, nombre o legajo"
                   className="h-12"
+                  disabled={!!editId}
                 />
-  
-                {empleadoOpen && (
+
+                {empleadoOpen && !editId && (
                   <div className="absolute left-0 top-full z-50 mt-1 max-h-72 w-full overflow-hidden overflow-y-auto rounded-xl border border-border bg-popover text-popover-foreground shadow-xl">
                     {agentesFiltrados.length === 0 ? (
                       <div className="p-3 text-sm text-muted-foreground">
@@ -339,6 +419,22 @@ export default function CrearLicencias() {
               </label>
               {archivo ? (
                 <p className="mt-3 text-sm text-foreground">{archivo.name}</p>
+              ) : archivoActual ? (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Archivo actual:{" "}
+                  {archivoActual.url ? (
+                    <a
+                      href={archivoActual.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-primary underline"
+                    >
+                      {archivoActual.nombre}
+                    </a>
+                  ) : (
+                    archivoActual.nombre
+                  )}
+                </p>
               ) : null}
             </div>
           </CardContent>

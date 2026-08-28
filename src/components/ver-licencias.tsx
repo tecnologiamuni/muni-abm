@@ -5,11 +5,14 @@ import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { fetchLicencias } from "@/lib/licencias"
 import type { Licencia } from "@/types/licencia"
 
 export default function VerLicencias() {
   const navigate = useNavigate()
   const [licencias, setLicencias] = useState<Licencia[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const hoy = useMemo(() => {
     const fecha = new Date()
@@ -28,25 +31,45 @@ export default function VerLicencias() {
     return licencias.filter((lic) => getDiasRestantes(lic.fin) > 0)
   }, [licencias])
 
+  const cargarLicencias = async () => {
+    setCargando(true)
+    setError(null)
+    try {
+      setLicencias(await fetchLicencias())
+    } catch (err) {
+      console.error("Error al obtener las licencias:", err)
+      setError("No se pudieron cargar las licencias.")
+    } finally {
+      setCargando(false)
+    }
+  }
+
   useEffect(() => {
-    const current = localStorage.getItem("licencias_guardadas")
-    if (!current) {
-      setLicencias([])
-      return
+    const cargarInicial = async () => {
+      setCargando(true)
+      setError(null)
+      try {
+        setLicencias(await fetchLicencias())
+      } catch (err) {
+        console.error("Error al obtener las licencias:", err)
+        setError("No se pudieron cargar las licencias.")
+      } finally {
+        setCargando(false)
+      }
     }
 
-    try {
-      setLicencias(JSON.parse(current))
-    } catch {
-      setLicencias([])
-    }
+    cargarInicial()
   }, [])
 
   return (
     <AppLayout
       title="Ver licencias"
       description="Licencias generadas que todavía están activas."
-      actions={<Button size="sm">Actualizar Lista</Button>}
+      actions={
+        <Button size="sm" onClick={cargarLicencias} disabled={cargando}>
+          {cargando ? "Actualizando..." : "Actualizar Lista"}
+        </Button>
+      }
     >
       <Card>
         <CardHeader>
@@ -56,9 +79,13 @@ export default function VerLicencias() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {licencias.length === 0 ? (
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : cargando ? (
+            <p className="text-sm text-muted-foreground">Cargando licencias...</p>
+          ) : licenciasActivas.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No se han guardado licencias aún.
+              No hay licencias activas.
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -83,16 +110,30 @@ export default function VerLicencias() {
                       <TableCell>{licencia.inicio}</TableCell>
                       <TableCell>{licencia.fin}</TableCell>
                       <TableCell>{getDiasRestantes(licencia.fin)}</TableCell>
-                      <TableCell>{licencia.archivoNombre || "Ninguno"}</TableCell>
+                      <TableCell>
+                        {licencia.archivoNombre ? (
+                          licencia.archivoUrl ? (
+                            <a
+                              href={licencia.archivoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary underline"
+                            >
+                              {licencia.archivoNombre}
+                            </a>
+                          ) : (
+                            licencia.archivoNombre
+                          )
+                        ) : (
+                          "Ninguno"
+                        )}
+                      </TableCell>
                       <TableCell>{licencia.observaciones || "-"}</TableCell>
                       <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            localStorage.setItem("licencia_editando", JSON.stringify(licencia))
-                            navigate("/licencias")
-                          }}
+                          onClick={() => navigate(`/licencias?id=${licencia.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                           <span className="ml-1">Editar</span>
