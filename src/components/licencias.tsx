@@ -164,9 +164,6 @@ export default function CrearLicencias() {
       description="Completa los datos de la solicitud de licencia."
       actions={
         <>
-          <Button variant="outline" size="sm">
-            Exportar Reporte
-          </Button>
           <Button variant="default" size="sm" onClick={guardarSolicitud}>
             Guardar Solicitud
           </Button>
