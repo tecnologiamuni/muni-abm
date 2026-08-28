@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { PlusIcon } from "lucide-react"
 
 import { AppLayout } from "@/components/app-layout"
 import { DataTable } from "@/components/data-table"
@@ -14,6 +15,7 @@ export default function Agentes() {
   const [inactivos, setInactivos] = useState<Agent[]>([])
   const [vistaBajas, setVistaBajas] = useState(false)
   const [reingresando, setReingresando] = useState<Agent | null>(null)
+  const [creando, setCreando] = useState(false)
 
   const fetchAgentes = async () => {
     try {
@@ -66,7 +68,11 @@ export default function Agentes() {
     cargarInicial()
   }, [navigate])
 
-  const handleVerBajas = () => {
+  const handleToggleVistaBajas = () => {
+    if (vistaBajas) {
+      setVistaBajas(false)
+      return
+    }
     setVistaBajas(true)
     fetchInactivos()
   }
@@ -77,18 +83,21 @@ export default function Agentes() {
       description="Personal municipal registrado."
       contentClassName=""
       actions={
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => (vistaBajas ? setVistaBajas(false) : handleVerBajas())}
-        >
-          {vistaBajas ? "Ver activos" : "Ver bajas"}
-        </Button>
+        vistaBajas ? undefined : (
+          <Button size="sm" onClick={() => setCreando(true)}>
+            <PlusIcon className="h-4 w-4" />
+            Agregar agente
+          </Button>
+        )
       }
     >
       <DataTable
         data={vistaBajas ? inactivos : agentes}
         onReingresar={vistaBajas ? (agente) => setReingresando(agente) : undefined}
+        creatingOpen={creando}
+        onCreatingOpenChange={setCreando}
+        vistaBajas={vistaBajas}
+        onToggleVistaBajas={handleToggleVistaBajas}
       />
       <ReingresoDialog
         agente={reingresando}

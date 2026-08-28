@@ -296,6 +296,20 @@ export default function TableCellViewer({
   >([])
   const [uploadingFoto, setUploadingFoto] = React.useState(false)
   const [fotoError, setFotoError] = React.useState<string | null>(null)
+  // In create mode there's no legajo to upload against yet, so the file is
+  // held here and uploaded right after the new agente is created.
+  const [selectedFotoFile, setSelectedFotoFile] = React.useState<File | null>(null)
+  const fotoPreviewUrl = React.useMemo(
+    () => (selectedFotoFile ? URL.createObjectURL(selectedFotoFile) : null),
+    [selectedFotoFile]
+  )
+  React.useEffect(() => {
+    return () => {
+      if (fotoPreviewUrl) {
+        URL.revokeObjectURL(fotoPreviewUrl)
+      }
+    }
+  }, [fotoPreviewUrl])
 
   const isControlled = open !== undefined
   const drawerOpen = isControlled ? open : internalOpen
@@ -357,6 +371,7 @@ export default function TableCellViewer({
       setCurrentItem(EMPTY_AGENT)
       setErrorMessage(null)
       setIsEditing(true)
+      setSelectedFotoFile(null)
       reset(buildFormValues(EMPTY_AGENT))
     }
   }, [isCreate, drawerOpen, reset, buildFormValues])
@@ -431,8 +446,26 @@ export default function TableCellViewer({
 
       if (isCreate) {
         const created = await response.json().catch(() => null)
-        const newAgent: Agent = { ...EMPTY_AGENT, ...payload, ...(created ?? {}) }
+        let newAgent: Agent = { ...EMPTY_AGENT, ...payload, ...(created ?? {}) }
+
+        if (selectedFotoFile && newAgent.legajo) {
+          try {
+            const fotoFormData = new FormData()
+            fotoFormData.append("foto", selectedFotoFile)
+            const fotoResponse = await apiFetch(`/agentes/${newAgent.legajo}/foto`, {
+              method: "POST",
+              body: fotoFormData,
+            })
+            if (fotoResponse.ok) {
+              newAgent = { ...newAgent, ...((await fotoResponse.json()) as Agent) }
+            }
+          } catch (error) {
+            console.error("Error al subir la foto del nuevo agente:", error)
+          }
+        }
+
         onCreate?.(newAgent)
+        setSelectedFotoFile(null)
         reset(buildFormValues(EMPTY_AGENT))
         setDrawerOpen(false)
       } else {
@@ -458,6 +491,7 @@ export default function TableCellViewer({
   const handleCancel = () => {
     setErrorMessage(null)
     if (isCreate) {
+      setSelectedFotoFile(null)
       reset(buildFormValues(EMPTY_AGENT))
       setDrawerOpen(false)
     } else {
@@ -469,7 +503,19 @@ export default function TableCellViewer({
   const handleFotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ""
-    if (!file || !resolvedItem.legajo) {
+    if (!file) {
+      return
+    }
+
+    // No legajo yet to upload against - hold onto the file and upload it
+    // right after the agente is created (see onSubmit).
+    if (isCreate) {
+      setFotoError(null)
+      setSelectedFotoFile(file)
+      return
+    }
+
+    if (!resolvedItem.legajo) {
       return
     }
 
@@ -536,9 +582,9 @@ export default function TableCellViewer({
         <DrawerHeader className="border-b pb-6">
               <div className="flex items-center gap-4">
             <div className="relative shrink-0">
-              {currentItem.foto_url ? (
+              {fotoPreviewUrl || currentItem.foto_url ? (
                 <img
-                  src={currentItem.foto_url}
+                  src={fotoPreviewUrl ?? currentItem.foto_url ?? undefined}
                   alt=""
                   className="h-14 w-14 rounded-full object-cover"
                 />
@@ -548,18 +594,16 @@ export default function TableCellViewer({
                   {displayApellido?.[0] ?? ""}
                 </div>
               )}
-              {isCreate ? null : (
-                <label className="absolute -bottom-1 -right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground hover:bg-muted">
-                  <Camera className="h-3 w-3" />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="sr-only"
-                    disabled={uploadingFoto}
-                    onChange={handleFotoChange}
-                  />
-                </label>
-              )}
+              <label className="absolute -bottom-1 -right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground hover:bg-muted">
+                <Camera className="h-3 w-3" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={uploadingFoto}
+                  onChange={handleFotoChange}
+                />
+              </label>
             </div>
             <div>
               <DrawerTitle className="text-xl">
@@ -578,6 +622,10 @@ export default function TableCellViewer({
                 <p className="mt-1 text-xs text-muted-foreground">Subiendo foto...</p>
               ) : fotoError ? (
                 <p className="mt-1 text-xs text-destructive">{fotoError}</p>
+              ) : isCreate && selectedFotoFile ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Foto seleccionada: {selectedFotoFile.name}
+                </p>
               ) : null}
             </div>
           </div>

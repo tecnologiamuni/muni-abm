@@ -71,7 +71,6 @@ import {
   GripVerticalIcon,
   EllipsisVerticalIcon,
   Columns3Icon,
-  PlusIcon,
   DownloadIcon,
   SearchIcon,
   ChevronDownIcon,
@@ -82,6 +81,7 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ChevronsUpDownIcon,
+  UserRoundXIcon,
 } from "lucide-react"
 
 // These columns exist so their data can be viewed/filtered, but stay
@@ -304,12 +304,21 @@ function DraggableRow({ row }: { row: Row<Agent> }) {
 export function DataTable({
   data: initialData,
   onReingresar,
+  creatingOpen,
+  onCreatingOpenChange,
+  vistaBajas,
+  onToggleVistaBajas,
 }: {
   data: Agent[]
   onReingresar?: (item: Agent) => void
+  creatingOpen?: boolean
+  onCreatingOpenChange?: (open: boolean) => void
+  vistaBajas?: boolean
+  onToggleVistaBajas?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
+  const [columnasOpen, setColumnasOpen] = React.useState(false)
   const [dependencias, setDependencias] = React.useState<Dependencia[]>([])
 
   React.useEffect(() => {
@@ -630,7 +639,7 @@ export function DataTable({
             />
           </div>
 
-          <DropdownMenu>
+          <DropdownMenu open={columnasOpen} onOpenChange={setColumnasOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Columns3Icon data-icon="inline-start" />
@@ -638,42 +647,68 @@ export function DataTable({
                 <ChevronDownIcon data-icon="inline-end" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32">
-              {table
-                .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
-                .map((column) => {
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                    >
-                      {COLUMN_LABELS[column.id] ?? column.id}
-                    </DropdownMenuCheckboxItem>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="max-h-72 overflow-y-auto">
+                {table
+                  .getAllColumns()
+                  .filter(
+                    (column) =>
+                      typeof column.accessorFn !== "undefined" &&
+                      column.getCanHide()
                   )
-                })}
+                  .map((column) => {
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        checked={column.getIsVisible()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(!!value)
+                        }
+                        onSelect={(event) => event.preventDefault()}
+                      >
+                        {COLUMN_LABELS[column.id] ?? column.id}
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+              </div>
+              <DropdownMenuSeparator />
+              <div className="p-1">
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setColumnasOpen(false)}
+                >
+                  Listo
+                </Button>
+              </div>
             </DropdownMenuContent>
           </DropdownMenu>
-          <TableCellViewer
-            mode="create"
-            dependencias={dependencias}
-            trigger={
-              <Button variant="outline" size="sm" className="ml-2">
-                <PlusIcon data-icon="inline-start" />
-                Agregar agente
-              </Button>
-            }
-            onCreate={(agente) => {
-              setData((prev) => [...prev, agente])
-            }}
-          />
+          {onToggleVistaBajas ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className={
+                vistaBajas
+                  ? "ml-2 border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300 dark:hover:bg-amber-900"
+                  : "ml-2"
+              }
+              onClick={onToggleVistaBajas}
+            >
+              <UserRoundXIcon data-icon="inline-start" />
+              {vistaBajas ? "Ver activos" : "Ver bajas"}
+            </Button>
+          ) : null}
+          {creatingOpen !== undefined ? (
+            <TableCellViewer
+              mode="create"
+              dependencias={dependencias}
+              open={creatingOpen}
+              onOpenChange={onCreatingOpenChange}
+              onCreate={(agente) => {
+                setData((prev) => [...prev, agente])
+              }}
+            />
+          ) : null}
         </div>
 
         <DropdownMenu>
