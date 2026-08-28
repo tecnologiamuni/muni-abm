@@ -141,12 +141,14 @@ function ActionsCell({
   onOpenChange,
   dependencias,
   onSave,
+  onReingresar,
 }: {
   item: Agent
   open: boolean
   onOpenChange: (open: boolean) => void
   dependencias: Dependencia[]
   onSave?: (updatedItem: Agent) => void
+  onReingresar?: (item: Agent) => void
 }) {
   return (
     <DropdownMenu>
@@ -169,6 +171,16 @@ function ActionsCell({
         >
           Ver detalle
         </DropdownMenuItem>
+        {onReingresar && item.fecha_baja ? (
+          <DropdownMenuItem
+            onSelect={(event) => {
+              event.preventDefault()
+              onReingresar(item)
+            }}
+          >
+            Reingresar
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
       </DropdownMenuContent>
@@ -213,8 +225,10 @@ function DraggableRow({ row }: { row: Row<Agent> }) {
 
 export function DataTable({
   data: initialData,
+  onReingresar,
 }: {
   data: Agent[]
+  onReingresar?: (item: Agent) => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
@@ -360,11 +374,12 @@ export function DataTable({
                 )
               )
             }}
+            onReingresar={onReingresar}
           />
         ),
       },
     ],
-    [activeDrawerId, dependencias]
+    [activeDrawerId, dependencias, onReingresar]
   )
   const sensors = useSensors(
     useSensor(MouseSensor, {}),

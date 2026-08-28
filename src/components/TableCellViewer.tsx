@@ -290,6 +290,9 @@ export default function TableCellViewer({
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null)
   const [currentItem, setCurrentItem] = React.useState(resolvedItem)
   const [internalOpen, setInternalOpen] = React.useState(false)
+  const [periodos, setPeriodos] = React.useState<
+    { fecha_ingreso: string; fecha_baja: string | null; motivo_baja: string | null }[]
+  >([])
 
   const isControlled = open !== undefined
   const drawerOpen = isControlled ? open : internalOpen
@@ -354,6 +357,26 @@ export default function TableCellViewer({
       reset(buildFormValues(EMPTY_AGENT))
     }
   }, [isCreate, drawerOpen, reset, buildFormValues])
+
+  React.useEffect(() => {
+    if (isCreate || !drawerOpen || !resolvedItem.legajo) {
+      return
+    }
+
+    const cargarPeriodos = async () => {
+      try {
+        const response = await apiFetch(`/agentes/${resolvedItem.legajo}/periodos`)
+        if (!response.ok) {
+          return
+        }
+        setPeriodos(await response.json())
+      } catch (error) {
+        console.error("Error al obtener el historial del agente:", error)
+      }
+    }
+
+    cargarPeriodos()
+  }, [isCreate, drawerOpen, resolvedItem.legajo])
 
   const onSubmit = handleSubmit(async (values) => {
     setIsSaving(true)
@@ -587,14 +610,32 @@ export default function TableCellViewer({
               <>
                 <section>
                   <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Estado</h3>
-                  <Badge className="bg-green-500">Activo</Badge>
+                  <Badge className={currentItem.fecha_baja ? "bg-red-500" : "bg-green-500"}>
+                    {currentItem.fecha_baja ? "Inactivo" : "Activo"}
+                  </Badge>
                 </section>
 
                 <section>
                   <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Historial</h3>
                   <div className="space-y-4">
-                    <TimelineItem title="Alta del agente" date={resolvedItem.fecha_ingreso} />
-                    <TimelineItem title="Última actualización" date="Hace 2 días" />
+                    {periodos.length > 0 ? (
+                      periodos.map((periodo, index) => (
+                        <React.Fragment key={`${periodo.fecha_ingreso}-${index}`}>
+                          <TimelineItem
+                            title={periodos.length > 1 ? `Alta (período ${index + 1})` : "Alta del agente"}
+                            date={periodo.fecha_ingreso}
+                          />
+                          {periodo.fecha_baja ? (
+                            <TimelineItem
+                              title={periodo.motivo_baja ? `Baja — ${periodo.motivo_baja}` : "Baja"}
+                              date={periodo.fecha_baja}
+                            />
+                          ) : null}
+                        </React.Fragment>
+                      ))
+                    ) : (
+                      <TimelineItem title="Alta del agente" date={resolvedItem.fecha_ingreso} />
+                    )}
                   </div>
                 </section>
               </>
