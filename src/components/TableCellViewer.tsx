@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Camera } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -293,6 +294,8 @@ export default function TableCellViewer({
   const [periodos, setPeriodos] = React.useState<
     { fecha_ingreso: string; fecha_baja: string | null; motivo_baja: string | null }[]
   >([])
+  const [uploadingFoto, setUploadingFoto] = React.useState(false)
+  const [fotoError, setFotoError] = React.useState<string | null>(null)
 
   const isControlled = open !== undefined
   const drawerOpen = isControlled ? open : internalOpen
@@ -463,6 +466,39 @@ export default function TableCellViewer({
     }
   }
 
+  const handleFotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file || !resolvedItem.legajo) {
+      return
+    }
+
+    setUploadingFoto(true)
+    setFotoError(null)
+    try {
+      const formData = new FormData()
+      formData.append("foto", file)
+
+      const response = await apiFetch(`/agentes/${resolvedItem.legajo}/foto`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "No se pudo subir la foto")
+      }
+
+      const updated = (await response.json()) as Agent
+      setCurrentItem(updated)
+      onSave?.(updated)
+    } catch (error) {
+      setFotoError(error instanceof Error ? error.message : "No se pudo subir la foto")
+    } finally {
+      setUploadingFoto(false)
+    }
+  }
+
   const displayNombre = isEditing ? watched?.nombre ?? currentItem.nombre : currentItem.nombre
   const displayApellido = isEditing ? watched?.apellido ?? currentItem.apellido : currentItem.apellido
 
@@ -483,7 +519,14 @@ export default function TableCellViewer({
       {isControlled ? null : (
         <DrawerTrigger asChild>
           {trigger ?? (
-            <Button variant="link" className="w-fit px-0 text-left text-foreground">
+            <Button variant="link" className="w-fit gap-2 px-0 text-left text-foreground">
+              {resolvedItem.foto_url ? (
+                <img
+                  src={resolvedItem.foto_url}
+                  alt=""
+                  className="h-6 w-6 rounded-full object-cover"
+                />
+              ) : null}
               {resolvedItem.apellido} {resolvedItem.nombre}
             </Button>
           )}
@@ -492,9 +535,31 @@ export default function TableCellViewer({
       <DrawerContent className="max-w-[500px] ml-auto">
         <DrawerHeader className="border-b pb-6">
               <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
-              {(displayNombre?.[0] ?? "") || (isCreate ? "+" : "")}
-              {displayApellido?.[0] ?? ""}
+            <div className="relative shrink-0">
+              {currentItem.foto_url ? (
+                <img
+                  src={currentItem.foto_url}
+                  alt=""
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
+                  {(displayNombre?.[0] ?? "") || (isCreate ? "+" : "")}
+                  {displayApellido?.[0] ?? ""}
+                </div>
+              )}
+              {isCreate ? null : (
+                <label className="absolute -bottom-1 -right-1 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border bg-background text-muted-foreground hover:bg-muted">
+                  <Camera className="h-3 w-3" />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    disabled={uploadingFoto}
+                    onChange={handleFotoChange}
+                  />
+                </label>
+              )}
             </div>
             <div>
               <DrawerTitle className="text-xl">
@@ -509,6 +574,11 @@ export default function TableCellViewer({
                     ? watched?.puesto ?? currentItem.puesto
                     : currentItem.puesto}
               </DrawerDescription>
+              {uploadingFoto ? (
+                <p className="mt-1 text-xs text-muted-foreground">Subiendo foto...</p>
+              ) : fotoError ? (
+                <p className="mt-1 text-xs text-destructive">{fotoError}</p>
+              ) : null}
             </div>
           </div>
         </DrawerHeader>
