@@ -240,6 +240,7 @@ export function DataTable({
   onCreatingOpenChange,
   vistaBajas,
   onToggleVistaBajas,
+  onAgenteChange,
 }: {
   data: Agent[]
   onReingresar?: (item: Agent) => void
@@ -247,6 +248,7 @@ export function DataTable({
   onCreatingOpenChange?: (open: boolean) => void
   vistaBajas?: boolean
   onToggleVistaBajas?: () => void
+  onAgenteChange?: () => void
 }) {
   const [data, setData] = React.useState(() => initialData)
   const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
@@ -326,6 +328,7 @@ export function DataTable({
                   current.id === updatedItem.id ? updatedItem : current
                 )
               )
+              onAgenteChange?.()
             }}
           />
         ),
@@ -470,13 +473,14 @@ export function DataTable({
                   current.id === updatedItem.id ? updatedItem : current
                 )
               )
+              onAgenteChange?.()
             }}
             onReingresar={onReingresar}
           />
         ),
       },
     ],
-    [activeDrawerId, dependencias, onReingresar]
+    [activeDrawerId, dependencias, onReingresar, onAgenteChange]
   )
   const table = useReactTable({
     data,
@@ -609,6 +613,7 @@ export function DataTable({
               onOpenChange={onCreatingOpenChange}
               onCreate={(agente) => {
                 setData((prev) => [...prev, agente])
+                onAgenteChange?.()
               }}
             />
           ) : null}

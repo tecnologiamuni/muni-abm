@@ -98,6 +98,10 @@ export default function Agentes() {
         onCreatingOpenChange={setCreando}
         vistaBajas={vistaBajas}
         onToggleVistaBajas={handleToggleVistaBajas}
+        onAgenteChange={() => {
+          fetchAgentes()
+          if (vistaBajas) fetchInactivos()
+        }}
       />
       <ReingresoDialog
         agente={reingresando}

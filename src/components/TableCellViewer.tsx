@@ -88,6 +88,14 @@ const TIPO_CONTRATACION_OPTIONS = [
   "PLANES",
 ].map((value) => ({ value, label: value }))
 
+const MOTIVO_BAJA_OPTIONS = [
+  "DESPIDO",
+  "RENUNCIA",
+  "JUBILACION",
+  "FALLECIMIENTO",
+  "OTRO",
+].map((value) => ({ value, label: value }))
+
 const NIVEL_ESTUDIOS_OPTIONS = [
   "PRIMARIO INCOMPLETO",
   "PRIMARIO EN CURSO",
@@ -125,6 +133,8 @@ type FormValues = {
   fecha_promocion: string
   decreto_nro: string
   observaciones: string
+  fecha_baja: string
+  motivo_baja: string
 }
 
 function InfoRow({
@@ -346,6 +356,8 @@ export default function TableCellViewer({
     fecha_promocion: source.fecha_promocion ?? "",
     decreto_nro: source.decreto_nro ?? "",
     observaciones: source.observaciones ?? "",
+    fecha_baja: source.fecha_baja ?? "",
+    motivo_baja: source.motivo_baja ?? "",
   }), [])
 
   const { register, handleSubmit, reset, control, setFocus } = useForm<FormValues>({
@@ -422,6 +434,8 @@ export default function TableCellViewer({
         fecha_promocion: values.fecha_promocion || null,
         decreto_nro: values.decreto_nro || null,
         observaciones: values.observaciones || null,
+        fecha_baja: values.fecha_baja || null,
+        motivo_baja: values.motivo_baja || null,
       }
 
       const response = await apiFetch(
@@ -728,9 +742,40 @@ export default function TableCellViewer({
               <>
                 <section>
                   <h3 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Estado</h3>
-                  <Badge className={currentItem.fecha_baja ? "bg-red-500" : "bg-green-500"}>
-                    {currentItem.fecha_baja ? "Inactivo" : "Activo"}
-                  </Badge>
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      <InfoRow
+                        label="Fecha de baja"
+                        value={currentItem.fecha_baja || "—"}
+                        field="fecha_baja"
+                        isEditing={isEditing}
+                        valueStr={watched?.fecha_baja}
+                        registerFn={register}
+                        placeholder="AAAA-MM-DD"
+                      />
+                      <SelectRow
+                        label="Motivo de baja"
+                        isEditing={isEditing}
+                        displayValue={currentItem.motivo_baja || "—"}
+                        control={control}
+                        name="motivo_baja"
+                        options={MOTIVO_BAJA_OPTIONS}
+                        placeholder="Seleccionar"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Badge className={currentItem.fecha_baja ? "bg-red-500" : "bg-green-500"}>
+                        {currentItem.fecha_baja ? "Inactivo" : "Activo"}
+                      </Badge>
+                      {currentItem.fecha_baja ? (
+                        <div className="flex items-center justify-between gap-3 border-b pb-2">
+                          <span className="text-muted-foreground">Motivo</span>
+                          <span className="font-medium">{currentItem.motivo_baja || "—"}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 </section>
 
                 <section>
