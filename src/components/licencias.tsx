@@ -14,6 +14,7 @@ import type { Agent } from "@/types/agent"
 import type { Licencia } from "@/types/licencia"
 
 const licenciaTipos = [
+  "Dia particular",
   "Enfermedad",
   "Maternidad",
   "Vacaciones",
