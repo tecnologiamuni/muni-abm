@@ -89,7 +89,7 @@ const TIPO_CONTRATACION_OPTIONS = [
 ].map((value) => ({ value, label: value }))
 
 const MOTIVO_BAJA_OPTIONS = [
-  "DESPIDO",
+  "BAJA",
   "RENUNCIA",
   "JUBILACION",
   "FALLECIMIENTO",
