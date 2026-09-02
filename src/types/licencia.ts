@@ -8,6 +8,7 @@ export const licenciaSchema = z.object({
   inicio: z.string(),
   fin: z.string(),
   archivoNombre: z.string().nullable(),
+  archivoUrl: z.string().nullable(),
   observaciones: z.string(),
   createdAt: z.string(),
 })

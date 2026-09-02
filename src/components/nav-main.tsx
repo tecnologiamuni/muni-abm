@@ -11,12 +11,14 @@ import { Link } from "react-router-dom";
 
 export function NavMain({
   items,
+  children,
 }: {
   items: {
     title: string;
     url: string;
     icon?: React.ReactNode;
   }[];
+  children?: React.ReactNode;
 }) {
   return (
     <SidebarGroup>
@@ -50,6 +52,7 @@ export function NavMain({
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+          {children}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

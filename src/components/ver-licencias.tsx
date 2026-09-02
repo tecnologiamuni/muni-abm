@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Edit } from "lucide-react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { fetchLicencias } from "@/lib/licencias"
 import type { Licencia } from "@/types/licencia"
 
 export default function VerLicencias() {
   const navigate = useNavigate()
   const [licencias, setLicencias] = useState<Licencia[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const hoy = useMemo(() => {
     const fecha = new Date()
@@ -30,105 +31,122 @@ export default function VerLicencias() {
     return licencias.filter((lic) => getDiasRestantes(lic.fin) > 0)
   }, [licencias])
 
+  const cargarLicencias = async () => {
+    setCargando(true)
+    setError(null)
+    try {
+      setLicencias(await fetchLicencias())
+    } catch (err) {
+      console.error("Error al obtener las licencias:", err)
+      setError("No se pudieron cargar las licencias.")
+    } finally {
+      setCargando(false)
+    }
+  }
+
   useEffect(() => {
-    const current = localStorage.getItem("licencias_guardadas")
-    if (!current) {
-      setLicencias([])
-      return
+    const cargarInicial = async () => {
+      setCargando(true)
+      setError(null)
+      try {
+        setLicencias(await fetchLicencias())
+      } catch (err) {
+        console.error("Error al obtener las licencias:", err)
+        setError("No se pudieron cargar las licencias.")
+      } finally {
+        setCargando(false)
+      }
     }
 
-    try {
-      setLicencias(JSON.parse(current))
-    } catch {
-      setLicencias([])
-    }
+    cargarInicial()
   }, [])
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
-        } as React.CSSProperties
+    <AppLayout
+      title="Ver licencias"
+      description="Licencias generadas que todavía están activas."
+      actions={
+        <Button size="sm" onClick={cargarLicencias} disabled={cargando}>
+          {cargando ? "Actualizando..." : "Actualizar Lista"}
+        </Button>
       }
     >
-      <AppSidebar variant="inset" />
-
-      <SidebarInset>
-        <SiteHeader />
-
-        <div className="flex min-h-[calc(100vh-3rem)] flex-col gap-6 p-6 lg:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-[0.15em] text-muted-foreground">
-                Licencias de Personal
-              </p>
-              <h1 className="text-3xl font-semibold tracking-tight">Ver licencias</h1>
-            </div>
-            <Button size="sm">Actualizar Lista</Button>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Listado de licencias</CardTitle>
-              <CardDescription>
-                Aquí podrás ver las licencias generadas y sus estados.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {licencias.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No se han guardado licencias aún.
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Empleado</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Inicio</TableHead>
-                        <TableHead>Fin</TableHead>
-                        <TableHead>Días restantes</TableHead>
-                        <TableHead>Archivo</TableHead>
-                        <TableHead>Observaciones</TableHead>
-                        <TableHead>Acciones</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {licenciasActivas.map((licencia) => (
-                        <TableRow key={licencia.id}>
-                          <TableCell>{licencia.empleado}</TableCell>
-                          <TableCell>{licencia.tipoLicencia}</TableCell>
-                          <TableCell>{licencia.inicio}</TableCell>
-                          <TableCell>{licencia.fin}</TableCell>
-                          <TableCell>{getDiasRestantes(licencia.fin)}</TableCell>
-                          <TableCell>{licencia.archivoNombre || "Ninguno"}</TableCell>
-                          <TableCell>{licencia.observaciones || "-"}</TableCell>
-                          <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                localStorage.setItem("licencia_editando", JSON.stringify(licencia))
-                                navigate("/licencias")
-                              }}
+      <Card>
+        <CardHeader>
+          <CardTitle>Listado de licencias</CardTitle>
+          <CardDescription>
+            Aquí podrás ver las licencias generadas y sus estados.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : cargando ? (
+            <p className="text-sm text-muted-foreground">Cargando licencias...</p>
+          ) : licenciasActivas.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No hay licencias activas.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empleado</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Inicio</TableHead>
+                    <TableHead>Fin</TableHead>
+                    <TableHead>Días restantes</TableHead>
+                    <TableHead>Archivo</TableHead>
+                    <TableHead>Observaciones</TableHead>
+                    <TableHead>Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {licenciasActivas.map((licencia) => (
+                    <TableRow key={licencia.id}>
+                      <TableCell>{licencia.empleado}</TableCell>
+                      <TableCell>{licencia.tipoLicencia}</TableCell>
+                      <TableCell>{licencia.inicio}</TableCell>
+                      <TableCell>{licencia.fin}</TableCell>
+                      <TableCell>{getDiasRestantes(licencia.fin)}</TableCell>
+                      <TableCell>
+                        {licencia.archivoNombre ? (
+                          licencia.archivoUrl ? (
+                            <a
+                              href={licencia.archivoUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-primary underline"
                             >
-                              <Edit className="h-4 w-4" />
-                              <span className="ml-1">Editar</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+                              {licencia.archivoNombre}
+                            </a>
+                          ) : (
+                            licencia.archivoNombre
+                          )
+                        ) : (
+                          "Ninguno"
+                        )}
+                      </TableCell>
+                      <TableCell>{licencia.observaciones || "-"}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/licencias?id=${licencia.id}`)}
+                        >
+                          <Edit className="h-4 w-4" />
+                          <span className="ml-1">Editar</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </AppLayout>
   )
 }

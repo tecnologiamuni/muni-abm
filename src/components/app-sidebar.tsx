@@ -5,6 +5,8 @@ import { Link, useLocation } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
 // import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { decodeToken } from "@/lib/auth"
+import { useAuthStore } from "@/store/auth"
 import {
   Sidebar,
   SidebarContent,
@@ -17,13 +19,13 @@ import {
   SidebarMenuSubItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar"
-import { 
-  LayoutDashboardIcon, 
-  ListIcon, 
-  // ChartBarIcon, 
-  // FolderIcon, 
-  // UsersIcon, 
-  CameraIcon, 
+import {
+  LayoutDashboardIcon,
+  ListIcon,
+  // ChartBarIcon,
+  // FolderIcon,
+  UsersIcon,
+  CameraIcon,
   FileTextIcon, 
   Settings2Icon, 
   CircleHelpIcon, 
@@ -43,8 +45,13 @@ const data = {
   },
   navMain: [
     {
+      title: "Novedades",
+      url: "/novedades",
+      icon: <NewspaperIcon />,
+    },
+    {
       title: "Agentes",
-      url: "/",
+      url: "/agentes",
       icon: (
         <LayoutDashboardIcon
         />
@@ -57,11 +64,6 @@ const data = {
         <ListIcon
         />
       ),
-    },
-    {
-      title: "Novedades",
-      url: "/novedades",
-      icon: <NewspaperIcon />,
     },
     // {
     //   title: "Analytics",
@@ -202,12 +204,19 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const [licenciasOpen, setLicenciasOpen] = React.useState(false)
+  const token = useAuthStore((state) => state.token)
+  const rol = decodeToken(token)?.role
 
   React.useEffect(() => {
     if (location.pathname.startsWith("/licencias") || location.pathname === "/ver-licencias") {
       setLicenciasOpen(true)
     }
   }, [location.pathname])
+
+  const navItems =
+    rol === "root"
+      ? [...data.navMain, { title: "Usuarios", url: "/usuarios", icon: <UsersIcon /> }]
+      : data.navMain
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -233,8 +242,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <SidebarMenu className="mt-2 px-2">
+        <NavMain items={navItems}>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Licencias">
               <button
@@ -271,7 +279,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </SidebarMenuSub>
             )}
           </SidebarMenuItem>
-        </SidebarMenu>
+        </NavMain>
         {/* <NavDocuments items={data.documents} /> */}
         {/* <NavSecondary items={data.navSecondary} className="mt-auto" /> */}
       </SidebarContent>

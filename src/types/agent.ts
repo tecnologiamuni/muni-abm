@@ -19,6 +19,13 @@ export const agentSchema = z.object({
   fecha_baja: z.string().nullable().optional(),
   motivo_baja: z.string().nullable().optional(),
   es_jerarquico: z.string().nullable().optional(),
+  tipo_contratacion: z.string().nullable().optional(),
+  categoria: z.string().nullable().optional(),
+  nro: z.number().nullable().optional(),
+  fecha_promocion: z.string().nullable().optional(),
+  decreto_nro: z.string().nullable().optional(),
+  observaciones: z.string().nullable().optional(),
+  foto_url: z.string().nullable().optional(),
 })
 
 export type Agent = z.infer<typeof agentSchema>
