@@ -1,5 +1,6 @@
 import * as React from "react"
 import { apiFetch } from "@/lib/api"
+import { formatDate } from "@/lib/date"
 import { exportAgentesToExcel } from "@/lib/export-excel"
 import {
   flexRender,
@@ -362,7 +363,7 @@ export function DataTable({
       {
         accessorKey: "fecha_ingreso",
         header: ({ column }) => <SortableHeader column={column} label="Ingreso" />,
-        cell: ({ row }) => <div>{row.original.fecha_ingreso}</div>,
+        cell: ({ row }) => <div>{formatDate(row.original.fecha_ingreso)}</div>,
       },
       {
         accessorKey: "sexo",
@@ -395,7 +396,7 @@ export function DataTable({
       {
         accessorKey: "fecha_nacimiento",
         header: ({ column }) => <SortableHeader column={column} label="Nacimiento" />,
-        cell: ({ row }) => <div>{row.original.fecha_nacimiento || "—"}</div>,
+        cell: ({ row }) => <div>{formatDate(row.original.fecha_nacimiento) || "—"}</div>,
       },
       {
         accessorKey: "nivel_estudios",
@@ -417,7 +418,7 @@ export function DataTable({
       {
         accessorKey: "fecha_baja",
         header: ({ column }) => <SortableHeader column={column} label="Baja" />,
-        cell: ({ row }) => <div>{row.original.fecha_baja || "—"}</div>,
+        cell: ({ row }) => <div>{formatDate(row.original.fecha_baja) || "—"}</div>,
       },
       {
         accessorKey: "motivo_baja",
@@ -443,7 +444,7 @@ export function DataTable({
       {
         accessorKey: "fecha_promocion",
         header: ({ column }) => <SortableHeader column={column} label="Fecha de promoción" />,
-        cell: ({ row }) => <div>{row.original.fecha_promocion || "—"}</div>,
+        cell: ({ row }) => <div>{formatDate(row.original.fecha_promocion) || "—"}</div>,
       },
       {
         accessorKey: "decreto_nro",

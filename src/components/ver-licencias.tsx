@@ -5,6 +5,7 @@ import { AppLayout } from "@/components/app-layout"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatDate } from "@/lib/date"
 import { fetchLicencias } from "@/lib/licencias"
 import type { Licencia } from "@/types/licencia"
 
@@ -107,8 +108,8 @@ export default function VerLicencias() {
                     <TableRow key={licencia.id}>
                       <TableCell>{licencia.empleado}</TableCell>
                       <TableCell>{licencia.tipoLicencia}</TableCell>
-                      <TableCell>{licencia.inicio}</TableCell>
-                      <TableCell>{licencia.fin}</TableCell>
+                      <TableCell>{formatDate(licencia.inicio)}</TableCell>
+                      <TableCell>{formatDate(licencia.fin)}</TableCell>
                       <TableCell>{getDiasRestantes(licencia.fin)}</TableCell>
                       <TableCell>
                         {licencia.archivoNombre ? (

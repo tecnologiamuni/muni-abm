@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { apiFetch } from "@/lib/api"
+import { formatDate } from "@/lib/date"
 import { fetchLicencias } from "@/lib/licencias"
 import { cn } from "@/lib/utils"
 import type { Agent } from "@/types/agent"
@@ -228,7 +229,7 @@ export default function Novedades() {
                     <p className="font-medium">{nombreCompleto(agente)}</p>
                     <p className="mt-1 text-muted-foreground">
                       {anios} {plural(anios, "año", "años")} desde el ingreso el{" "}
-                      {agente.fecha_ingreso}
+                      {formatDate(agente.fecha_ingreso)}
                     </p>
                     {dias === 0 ? (
                       <Badge className="mt-1">Hoy</Badge>
@@ -267,7 +268,7 @@ export default function Novedades() {
                   <li key={agente.id} className={tarjetaClassName(dias === 0)}>
                     <p className="font-medium">{nombreCompleto(agente)}</p>
                     <p className="mt-1 text-muted-foreground">
-                      Cumpleaños: {agente.fecha_nacimiento}
+                      Cumpleaños: {formatDate(agente.fecha_nacimiento)}
                     </p>
                     {dias === 0 ? (
                       <Badge className="mt-1">
@@ -315,7 +316,7 @@ export default function Novedades() {
                           {empiezaHoy ? "Empieza hoy" : "Termina hoy"}
                         </Badge>
                       ) : (
-                        <p className="mt-1 text-xs text-muted-foreground">Hasta {licencia.fin}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Hasta {formatDate(licencia.fin)}</p>
                       )}
                     </li>
                   )

@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select"
 import type { Agent, Dependencia } from "@/types/agent"
 import { apiFetch } from "@/lib/api"
+import { formatDate, parseDisplayDate } from "@/lib/date"
 
 const EMPTY_AGENT: Agent = {
   id: 0,
@@ -145,6 +146,7 @@ function InfoRow({
   valueStr,
   registerFn,
   placeholder,
+  dateField = false,
 }: {
   label: string
   value: React.ReactNode
@@ -153,16 +155,36 @@ function InfoRow({
   valueStr?: string
   registerFn?: UseFormRegister<FormValues>
   placeholder?: string
+  dateField?: boolean
 }) {
+  const registration = registerFn?.(
+    field!,
+    dateField ? { setValueAs: parseDisplayDate } : undefined
+  )
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!dateField) {
+      registration?.onChange(event)
+      return
+    }
+
+    const displayValue = event.target.value
+    event.target.value = parseDisplayDate(displayValue)
+    registration?.onChange(event)
+    event.target.value = displayValue
+  }
+
   return (
     <div className="flex items-center justify-between gap-3 border-b pb-2">
       <span className="text-muted-foreground">{label}</span>
       {isEditing && field ? (
         <Input
           key={`${field}-${String(value ?? "")}`}
-          {...(registerFn ? registerFn(field) : {})}
-          defaultValue={String(valueStr ?? value ?? "")}
-          placeholder={placeholder}
+          {...registration}
+          value={dateField ? formatDate(valueStr ?? String(value ?? "")) : undefined}
+          defaultValue={!dateField ? String(valueStr ?? value ?? "") : undefined}
+          placeholder={dateField ? "DD/MM/AAAA" : placeholder}
+          onChange={handleChange}
           className="h-8 max-w-44"
         />
       ) : (
@@ -266,7 +288,7 @@ function TimelineItem({
 
         <p className="font-medium">{title}</p>
 
-        <p className="text-sm text-muted-foreground">{date}</p>
+        <p className="text-sm text-muted-foreground">{formatDate(date)}</p>
 
       </div>
 
@@ -421,8 +443,8 @@ export default function TableCellViewer({
         localidad: values.localidad,
         domicilio: values.domicilio,
         nro_celular: values.nro_celular,
-        fecha_nacimiento: values.fecha_nacimiento,
-        fecha_ingreso: values.fecha_ingreso,
+        fecha_nacimiento: parseDisplayDate(values.fecha_nacimiento),
+        fecha_ingreso: parseDisplayDate(values.fecha_ingreso),
         nivel_estudios: values.nivel_estudios,
         cantidad_hijos: Number(values.cantidad_hijos) || 0,
         sexo: values.sexo,
@@ -431,10 +453,10 @@ export default function TableCellViewer({
         tipo_contratacion: values.tipo_contratacion || null,
         categoria: values.categoria || null,
         nro: values.nro ? Number(values.nro) : null,
-        fecha_promocion: values.fecha_promocion || null,
+        fecha_promocion: values.fecha_promocion ? parseDisplayDate(values.fecha_promocion) : null,
         decreto_nro: values.decreto_nro || null,
         observaciones: values.observaciones || null,
-        fecha_baja: values.fecha_baja || null,
+        fecha_baja: values.fecha_baja ? parseDisplayDate(values.fecha_baja) : null,
         motivo_baja: values.motivo_baja || null,
       }
 
@@ -682,8 +704,8 @@ export default function TableCellViewer({
                 />
                 <InfoRow label="Domicilio" value={currentItem.domicilio} field="domicilio" isEditing={isEditing} valueStr={watched?.domicilio} registerFn={register} />
                 <InfoRow label="Celular" value={currentItem.nro_celular} field="nro_celular" isEditing={isEditing} valueStr={watched?.nro_celular} registerFn={register} />
-                <InfoRow label="Nacimiento" value={currentItem.fecha_nacimiento} field="fecha_nacimiento" isEditing={isEditing} valueStr={watched?.fecha_nacimiento} registerFn={register} placeholder="AAAA-MM-DD" />
-                <InfoRow label="Ingreso" value={currentItem.fecha_ingreso} field="fecha_ingreso" isEditing={isEditing} valueStr={watched?.fecha_ingreso} registerFn={register} placeholder="AAAA-MM-DD" />
+                <InfoRow label="Nacimiento" value={formatDate(currentItem.fecha_nacimiento)} field="fecha_nacimiento" isEditing={isEditing} valueStr={watched?.fecha_nacimiento} registerFn={register} dateField />
+                <InfoRow label="Ingreso" value={formatDate(currentItem.fecha_ingreso)} field="fecha_ingreso" isEditing={isEditing} valueStr={watched?.fecha_ingreso} registerFn={register} dateField />
                 <SelectRow
                   label="Nivel"
                   isEditing={isEditing}
@@ -732,7 +754,7 @@ export default function TableCellViewer({
                 />
                 <InfoRow label="Categoría" value={currentItem.categoria || "—"} field="categoria" isEditing={isEditing} valueStr={watched?.categoria} registerFn={register} />
                 <InfoRow label="Nro." value={currentItem.nro ?? "—"} field="nro" isEditing={isEditing} valueStr={watched?.nro} registerFn={register} />
-                <InfoRow label="Fecha de promoción" value={currentItem.fecha_promocion || "—"} field="fecha_promocion" isEditing={isEditing} valueStr={watched?.fecha_promocion} registerFn={register} placeholder="AAAA-MM-DD" />
+                <InfoRow label="Fecha de promoción" value={formatDate(currentItem.fecha_promocion) || "—"} field="fecha_promocion" isEditing={isEditing} valueStr={watched?.fecha_promocion} registerFn={register} dateField />
                 <InfoRow label="Decreto Nro." value={currentItem.decreto_nro || "—"} field="decreto_nro" isEditing={isEditing} valueStr={watched?.decreto_nro} registerFn={register} />
                 <TextAreaRow label="Observaciones" value={currentItem.observaciones} field="observaciones" isEditing={isEditing} valueStr={watched?.observaciones} registerFn={register} />
               </div>
@@ -751,7 +773,7 @@ export default function TableCellViewer({
                         isEditing={isEditing}
                         valueStr={watched?.fecha_baja}
                         registerFn={register}
-                        placeholder="AAAA-MM-DD"
+                        dateField
                       />
                       <SelectRow
                         label="Motivo de baja"
