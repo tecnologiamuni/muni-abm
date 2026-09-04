@@ -6,15 +6,18 @@ import "./index.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { TooltipProvider } from "./components/ui/tooltip.tsx";
+import { ErrorBoundary } from "@/components/error-boundary.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <TooltipProvider>
-          <App />
-        </TooltipProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <TooltipProvider>
+            <App />
+          </TooltipProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   </StrictMode>
 );
