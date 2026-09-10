@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useNavigate } from "react-router-dom"
 import { apiFetch } from "@/lib/api"
 import { formatDate } from "@/lib/date"
 import { exportAgentesToExcel } from "@/lib/export-excel"
@@ -175,19 +176,13 @@ function SortableHeader({
 
 function ActionsCell({
   item,
-  open,
-  onOpenChange,
-  dependencias,
-  onSave,
   onReingresar,
 }: {
   item: Agent
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  dependencias: Dependencia[]
-  onSave?: (updatedItem: Agent) => void
   onReingresar?: (item: Agent) => void
 }) {
+  const navigate = useNavigate()
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -204,7 +199,7 @@ function ActionsCell({
         <DropdownMenuItem
           onSelect={(event) => {
             event.preventDefault()
-            onOpenChange(true)
+            navigate(`/agentes/${item.legajo}`)
           }}
         >
           Ver detalle
@@ -222,14 +217,6 @@ function ActionsCell({
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive">Eliminar</DropdownMenuItem>
       </DropdownMenuContent>
-
-      <TableCellViewer
-        item={item}
-        open={open}
-        onOpenChange={onOpenChange}
-        dependencias={dependencias}
-        onSave={onSave}
-      />
     </DropdownMenu>
   )
 }
@@ -251,8 +238,8 @@ export function DataTable({
   onToggleVistaBajas?: () => void
   onAgenteChange?: () => void
 }) {
+  const navigate = useNavigate()
   const [data, setData] = React.useState(() => initialData)
-  const [activeDrawerId, setActiveDrawerId] = React.useState<number | null>(null)
   const [columnasOpen, setColumnasOpen] = React.useState(false)
   const [dependencias, setDependencias] = React.useState<Dependencia[]>([])
 
@@ -320,18 +307,13 @@ export function DataTable({
         accessorKey: "apellido",
         header: ({ column }) => <SortableHeader column={column} label="Agente" />,
         cell: ({ row }) => (
-          <TableCellViewer
-            item={row.original}
-            dependencias={dependencias}
-            onSave={(updatedItem) => {
-              setData((prev) =>
-                prev.map((current) =>
-                  current.id === updatedItem.id ? updatedItem : current
-                )
-              )
-              onAgenteChange?.()
-            }}
-          />
+          <Button
+            variant="link"
+            className="h-auto w-fit p-0 text-left font-semibold text-foreground"
+            onClick={() => navigate(`/agentes/${row.original.legajo}`)}
+          >
+            {row.original.apellido} {row.original.nombre}
+          </Button>
         ),
         enableHiding: false,
         enableGlobalFilter: true,
@@ -463,25 +445,12 @@ export function DataTable({
         cell: ({ row }) => (
           <ActionsCell
             item={row.original}
-            open={activeDrawerId === row.original.id}
-            onOpenChange={(nextOpen) => {
-              setActiveDrawerId(nextOpen ? row.original.id : null)
-            }}
-            dependencias={dependencias}
-            onSave={(updatedItem) => {
-              setData((prev) =>
-                prev.map((current) =>
-                  current.id === updatedItem.id ? updatedItem : current
-                )
-              )
-              onAgenteChange?.()
-            }}
             onReingresar={onReingresar}
           />
         ),
       },
     ],
-    [activeDrawerId, dependencias, onReingresar, onAgenteChange]
+    [dependencias, onReingresar]
   )
   const table = useReactTable({
     data,
