@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Agentes from "./app/agentes/page";
+import AgentDetailPage from "./app/agentes/[legajo]/page";
+import AgentEditPage from "./app/agentes/[legajo]/editar/page";
 import LoginPage from "./app/login/page";
 import Licencias from "./components/licencias";
 import VerLicencias from "./components/ver-licencias";
@@ -17,6 +19,8 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Navigate to="/novedades" replace />} />
         <Route path="/agentes" element={<Agentes />} />
+        <Route path="/agentes/:legajo/editar" element={<AgentEditPage />} />
+        <Route path="/agentes/:legajo" element={<AgentDetailPage />} />
         <Route path="/licencias" element={<Licencias />} />
         <Route path="/ver-licencias" element={<VerLicencias />} />
         <Route path="/licencias-expiradas" element={<LicenciasExpiradas />} />
