@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import Agentes from "./app/agentes/page";
+import Jubilaciones from "./app/jubilaciones/page";
 import AgentDetailPage from "./app/agentes/[legajo]/page";
 import AgentEditPage from "./app/agentes/[legajo]/editar/page";
 import LoginPage from "./app/login/page";
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<Navigate to="/novedades" replace />} />
         <Route path="/agentes" element={<Agentes />} />
+        <Route path="/jubilaciones" element={<Jubilaciones />} />
         <Route path="/agentes/:legajo/editar" element={<AgentEditPage />} />
         <Route path="/agentes/:legajo" element={<AgentDetailPage />} />
         <Route path="/licencias" element={<Licencias />} />

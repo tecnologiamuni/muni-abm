@@ -34,6 +34,7 @@ import {
   FileChartColumnIcon, 
   ChevronDownIcon,
   NewspaperIcon,
+  CalendarDaysIcon,
   // CommandIcon,
   FileIcon} from "lucide-react"
 
@@ -56,6 +57,11 @@ const data = {
         <LayoutDashboardIcon
         />
       ),
+    },
+    {
+      title: "Jubilaciones",
+      url: "/jubilaciones",
+      icon: <CalendarDaysIcon />,
     },
     {
       title: "Dependencias",

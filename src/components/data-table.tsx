@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import { apiFetch } from "@/lib/api"
-import { formatDate } from "@/lib/date"
+import { calculateAge, formatDate } from "@/lib/date"
 import { exportAgentesToExcel } from "@/lib/export-excel"
 import {
   flexRender,
@@ -223,6 +223,7 @@ function ActionsCell({
 
 export function DataTable({
   data: initialData,
+  modoJubilaciones = false,
   onReingresar,
   creatingOpen,
   onCreatingOpenChange,
@@ -231,6 +232,7 @@ export function DataTable({
   onAgenteChange,
 }: {
   data: Agent[]
+  modoJubilaciones?: boolean
   onReingresar?: (item: Agent) => void
   creatingOpen?: boolean
   onCreatingOpenChange?: (open: boolean) => void
@@ -267,7 +269,9 @@ export function DataTable({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   )
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sorting, setSorting] = React.useState<SortingState>(() =>
+    modoJubilaciones ? [{ id: "edad", desc: true }] : []
+  )
   const [globalFilter, setGlobalFilter] = React.useState("")
   const [pagination, setPagination] = React.useState({
     pageIndex: 0,
@@ -380,6 +384,20 @@ export function DataTable({
         header: ({ column }) => <SortableHeader column={column} label="Nacimiento" />,
         cell: ({ row }) => <div>{formatDate(row.original.fecha_nacimiento) || "—"}</div>,
       },
+      ...(modoJubilaciones
+        ? [
+            {
+              id: "edad",
+              accessorFn: (row: Agent) => calculateAge(row.fecha_nacimiento),
+              header: ({ column }: { column: Column<Agent, unknown> }) => (
+                <SortableHeader column={column} label="Edad" />
+              ),
+              cell: ({ getValue }: { getValue: () => unknown }) => (
+                <div>{(getValue() as number | null) ?? "—"}</div>
+              ),
+            },
+          ]
+        : []),
       {
         accessorKey: "nivel_estudios",
         header: ({ column }) => <SortableHeader column={column} label="Nivel" />,
@@ -450,7 +468,7 @@ export function DataTable({
         ),
       },
     ],
-    [dependencias, onReingresar]
+    [dependencias, modoJubilaciones, onReingresar]
   )
   const table = useReactTable({
     data,
